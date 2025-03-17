@@ -1,5 +1,5 @@
 import pygame, random
-from config import WIDTH, HEIGHT, WHITE, RED, BLUE, GREEN, BLACK, LEVEL_DURATION, SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED, PLATFORM_WIDTH, PLATFORM_HEIGHT, SPIKE_HEIGHT, COIN_SIZE
+from config import WIDTH, HEIGHT, WHITE, RED, BLUE, GREEN, BLACK, LEVEL_DURATION, SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED, PLATFORM_WIDTH, PLATFORM_HEIGHT, SPIKE_HEIGHT, COIN_SIZE, COLLISION_TOLERANCE
 from assets import load_assets
 from player import Player
 from game_platform import Platform
@@ -66,7 +66,6 @@ def run_game():
                     if player.on_ground:
                         player.charging = True
                         player.jump_charge = MIN_JUMP_STRENGTH
-                # X key now always triggers an immediate jump with minimum strength
                 if event.key == pygame.K_x:
                     boing_sound.play()
                     if player.on_ground:
@@ -83,12 +82,10 @@ def run_game():
                     player.jump_charge = 0
             # Joystick input:
             if event.type == pygame.JOYBUTTONDOWN:
-                # A button (button 0) for variable jump charging
                 if event.button == 0:
                     if player.on_ground:
                         player.charging = True
                         player.jump_charge = MIN_JUMP_STRENGTH
-                # X button (button 2) now always triggers an immediate jump with minimum strength
                 if event.button == 2:
                     boing_sound.play()
                     if player.on_ground:
@@ -168,7 +165,8 @@ def run_game():
                     for obstacle in obstacles:
                         if new_platform.x <= obstacle.x <= new_platform.x + new_platform.width:
                             obs_rect = pygame.Rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
-                            if coin_rect.colliderect(obs_rect.inflate(200, 200)):
+                            # Inflate obstacle rectangle by twice the tolerance (i.e. add tolerance to each side)
+                            if coin_rect.colliderect(obs_rect.inflate(COLLISION_TOLERANCE * 2, COLLISION_TOLERANCE * 2)):
                                 safe = False
                                 break
                     if safe:
@@ -199,10 +197,12 @@ def run_game():
         coin_rect_disp = coin_text.get_rect(topright=(WIDTH - 10, 10))
         screen.blit(coin_text, coin_rect_disp)
         
+        # Check collision with obstacles using tolerance
         for obstacle in obstacles:
             obs_rect = pygame.Rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
-            if player_rect.colliderect(obs_rect):
+            if player_rect.colliderect(obs_rect.inflate(COLLISION_TOLERANCE * 2, COLLISION_TOLERANCE * 2)):
                 running = False
+        
         if player.y + player.height >= HEIGHT - SPIKE_HEIGHT:
             running = False
         if remaining_time <= 0:
