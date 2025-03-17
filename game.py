@@ -1,12 +1,18 @@
-# game.py
 import pygame, random
-from config import *
+from config import WIDTH, HEIGHT, WHITE, RED, BLUE, GREEN, BLACK, LEVEL_DURATION, SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED, PLATFORM_WIDTH, PLATFORM_HEIGHT, SPIKE_HEIGHT, COIN_SIZE
 from assets import load_assets
 from player import Player
 from game_platform import Platform
 from obstacle import Obstacle
 from coin import StarCoin
 from spikes import Spikes
+
+# Cache the joystick instance if available
+if pygame.joystick.get_count() > 0:
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+else:
+    joystick = None
 
 def run_game():
     assets = load_assets()
@@ -54,12 +60,13 @@ def run_game():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            # Keyboard input
+            # Keyboard input:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if player.on_ground:
                         player.charging = True
                         player.jump_charge = MIN_JUMP_STRENGTH
+                # X key now always triggers an immediate jump with minimum strength
                 if event.key == pygame.K_x:
                     boing_sound.play()
                     if player.on_ground:
@@ -74,8 +81,7 @@ def run_game():
                         player.vel_y = -player.jump_charge
                     player.charging = False
                     player.jump_charge = 0
-            
-            # Joystick input
+            # Joystick input:
             if event.type == pygame.JOYBUTTONDOWN:
                 # A button (button 0) for variable jump charging
                 if event.button == 0:
@@ -103,9 +109,7 @@ def run_game():
             player.jump_charge += CHARGE_RATE
             if player.jump_charge > MAX_JUMP_STRENGTH:
                 player.jump_charge = MAX_JUMP_STRENGTH
-        if (pygame.joystick.get_count() > 0 and 
-            pygame.joystick.Joystick(0).get_button(0) and 
-            player.charging and player.on_ground):
+        if joystick is not None and joystick.get_button(0) and player.charging and player.on_ground:
             player.jump_charge += CHARGE_RATE
             if player.jump_charge > MAX_JUMP_STRENGTH:
                 player.jump_charge = MAX_JUMP_STRENGTH
@@ -123,7 +127,6 @@ def run_game():
             if coin.x + coin.width < 0:
                 star_coins.remove(coin)
         
-        # Spawn new platforms if needed
         while platforms and platforms[-1].x + platforms[-1].width < WIDTH:
             gap = random.randint(safe_gap_min, safe_gap_max)
             new_x = platforms[-1].x + platforms[-1].width + gap
@@ -153,7 +156,7 @@ def run_game():
                     obs = Obstacle(new_platform, pokemon_images)
                     obs.x = pos
                     obstacles.append(obs)
-            # Spawn a coin if possible, ensuring it is at least 100 pixels away from obstacles on this platform.
+            # Spawn a coin if possible, ensuring it's at least 100 pixels away from obstacles on this platform.
             if coins_spawned < 3 and random.random() < 0.3:
                 placed = False
                 attempts = 0
@@ -190,9 +193,9 @@ def run_game():
         for coin in star_coins:
             coin.draw(screen)
         
-        timer_text = font.render(f"Time: {int(remaining_time)}", True, (0, 0, 0))
+        timer_text = font.render(f"Time: {int(remaining_time)}", True, BLACK)
         screen.blit(timer_text, (10, 10))
-        coin_text = font.render(f"Coins: {coins_collected}", True, (0, 0, 0))
+        coin_text = font.render(f"Coins: {coins_collected}", True, BLACK)
         coin_rect_disp = coin_text.get_rect(topright=(WIDTH - 10, 10))
         screen.blit(coin_text, coin_rect_disp)
         
@@ -208,10 +211,7 @@ def run_game():
         pygame.display.update()
         clock.tick(30)
     
-        # (Optional debugging: print elapsed time, etc.)
-    
-    # Game Over screen
-    over_text = font.render("Game Over! Press any key or Y button to restart.", True, (255, 0, 0))
+    over_text = font.render("Game Over! Press any key or Y button to restart.", True, RED)
     over_rect = over_text.get_rect(center=(WIDTH//2, HEIGHT//2))
     screen.blit(over_text, over_rect)
     pygame.display.update()
