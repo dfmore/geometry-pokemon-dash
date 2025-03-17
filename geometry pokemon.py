@@ -50,17 +50,17 @@ font = pygame.font.Font(None, 36)
 
 # Load Pokémon sprites (including squirtle.png)
 POKEMON_IMAGES = [
-    pygame.transform.scale(pygame.image.load("C:\\Users\\Daniel Moreira\\Desktop\\pikachu.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT)),
-    pygame.transform.scale(pygame.image.load("C:\\Users\\Daniel Moreira\\Desktop\\charmander.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT)),
-    pygame.transform.scale(pygame.image.load("C:\\Users\\Daniel Moreira\\Desktop\\bulbasaur.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT)),
-    pygame.transform.scale(pygame.image.load("C:\\Users\\Daniel Moreira\\Desktop\\squirtle.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT))
+    pygame.transform.scale(pygame.image.load("sprites\\pikachu.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT)),
+    pygame.transform.scale(pygame.image.load("sprites\\charmander.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT)),
+    pygame.transform.scale(pygame.image.load("sprites\\bulbasaur.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT)),
+    pygame.transform.scale(pygame.image.load("sprites\\squirtle.png"), (OBSTACLE_WIDTH, OBSTACLE_HEIGHT))
 ]
 
 # Load the star coin image and scale it (now using star_coin.gif)
-coin_image = pygame.transform.scale(pygame.image.load("C:\\Users\\Daniel Moreira\\Desktop\\star_coin.gif"), (COIN_SIZE, COIN_SIZE))
+coin_image = pygame.transform.scale(pygame.image.load("sprites\\star_coin.gif"), (COIN_SIZE, COIN_SIZE))
 
 # Load the boing sound (using boing.mp3)
-boing_sound = pygame.mixer.Sound("C:\\Users\\Daniel Moreira\\Desktop\\boing.mp3")
+boing_sound = pygame.mixer.Sound("sounds\\boing.mp3")
 
 # Player Class with variable jump charge and double jump capability
 class Player:
