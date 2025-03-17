@@ -1,4 +1,4 @@
-# platform.py
+# game_platform.py
 import pygame
 from config import PLATFORM_WIDTH, PLATFORM_HEIGHT, SPEED
 
