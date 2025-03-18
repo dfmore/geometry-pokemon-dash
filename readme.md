@@ -16,3 +16,26 @@ Before running the game, ensure you have the following installed:
    ```bash
    git clone https://github.com/your-username/geometry-pokemon-dash.git
    cd geometry-pokemon-dash
+   ```
+
+2. Install the required dependencies:
+
+   ```bash
+   pip install pygame
+   ```
+
+## Running the Game
+
+1. Navigate to the project directory:
+
+   ```bash
+   cd geometry-pokemon-dash
+   ```
+
+2. Run the game using the following command:
+
+   ```bash
+   python main.py
+   ```
+
+3. The game window will open, and you can start playing!
