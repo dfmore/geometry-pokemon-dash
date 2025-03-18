@@ -48,7 +48,7 @@ BLUE  = (0, 0, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 
-COLLISION_TOLERANCE = 6
+COLLISION_TOLERANCE = 7
 
 ###############################################################################
 # Spawning / platform / obstacle config
