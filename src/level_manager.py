@@ -23,26 +23,35 @@ class LevelManager:
         self.coins_spawned = 0
 
     def generate_initial_platforms(self, screen_width):
-        # Fill up the screen width with initial platforms
         while self.platforms[-1].x + self.platforms[-1].width < screen_width:
             gap = random.randint(c.SPAWN_SAFE_GAP_MIN, c.SPAWN_SAFE_GAP_MAX)
             last_platform = self.platforms[-1]
             new_x = last_platform.x + last_platform.width + gap
-            new_y = last_platform.y + random.randint(c.SPAWN_VERTICAL_OFFSET_MIN,
-                                                     c.SPAWN_VERTICAL_OFFSET_MAX)
-            new_y = max(c.SPAWN_MIN_PLATFORM_Y, min(new_y, c.SPAWN_MAX_PLATFORM_Y))
+
+            offset = random.randint(c.SPAWN_VERTICAL_OFFSET_MIN, c.SPAWN_VERTICAL_OFFSET_MAX)
+            new_y = last_platform.y + offset
+
+            # Convert the fraction-based min/max into pixel values:
+            min_platform_y = int(c.SPAWN_MIN_PLATFORM_Y * c.HEIGHT)
+            max_platform_y = int(c.SPAWN_MAX_PLATFORM_Y * c.HEIGHT)
+
+            new_y = max(min_platform_y, min(new_y, max_platform_y))
+
             self.platforms.append(Platform(new_x, new_y))
 
     def spawn_new_platforms(self, screen_width):
-        # Continually spawn new platforms and obstacles/coins once the last platform is fully on-screen
         while self.platforms and (self.platforms[-1].x + self.platforms[-1].width < screen_width):
-            gap = random.randint(c.SPAWN_SAFE_GAP_MIN, c.SPAWN_SAFE_GAP_MAX)
+            gap = random.randint(50, 140)
             last_platform = self.platforms[-1]
             new_x = last_platform.x + last_platform.width + gap
-            new_y = last_platform.y + random.randint(c.SPAWN_VERTICAL_OFFSET_MIN,
-                                                     c.SPAWN_VERTICAL_OFFSET_MAX)
-            new_y = max(c.SPAWN_MIN_PLATFORM_Y, min(new_y, c.SPAWN_MAX_PLATFORM_Y))
-            
+
+            offset = random.randint(c.SPAWN_VERTICAL_OFFSET_MIN, c.SPAWN_VERTICAL_OFFSET_MAX)
+            new_y = last_platform.y + offset
+
+            min_platform_y = int(c.SPAWN_MIN_PLATFORM_Y * c.HEIGHT)
+            max_platform_y = int(c.SPAWN_MAX_PLATFORM_Y * c.HEIGHT)
+            new_y = max(min_platform_y, min(new_y, max_platform_y))
+
             new_platform = Platform(new_x, new_y)
             self.platforms.append(new_platform)
             
