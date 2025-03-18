@@ -1,13 +1,13 @@
-import pygame, random
-from src.config import WIDTH, HEIGHT, WHITE, RED, BLUE, GREEN, BLACK, LEVEL_DURATION, SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED, PLATFORM_WIDTH, PLATFORM_HEIGHT, SPIKE_HEIGHT, COIN_SIZE, COLLISION_TOLERANCE
+# game.py
+import pygame
+import random
+import src.config as c
 from src.assets import load_assets
 from src.player import Player
-from src.game_platform import Platform
-from src.obstacle import Obstacle
-from src.coin import StarCoin
 from src.spikes import Spikes
+from src.game_platform import Platform
+from src.level_manager import LevelManager  # Our new spawner/manager
 
-# Cache the joystick instance if available
 if pygame.joystick.get_count() > 0:
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
@@ -25,52 +25,38 @@ class Game:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
         
-        # Pre-generate initial platforms
-        self.platforms = []
+        # Level manager holds platforms/obstacles/coins
+        self.level_manager = LevelManager(self.pokemon_images, self.coin_image)
+
+        # Insert an initial platform
         first_platform = Platform(100, 320)
-        self.platforms.append(first_platform)
-        self._generate_initial_platforms()
-        
-        self.star_coins = []
-        self.coins_spawned = 0
-        self.coins_collected = 0
-        self.obstacles = []
+        self.level_manager.platforms.append(first_platform)
+        # Generate enough initial platforms to fill the screen
+        self.level_manager.generate_initial_platforms(c.WIDTH)
         
         self.player = Player()
         self.spikes = Spikes()
+
         self.start_ticks = pygame.time.get_ticks()
-        
-    def _generate_initial_platforms(self) -> None:
-        safe_gap_min = 50
-        safe_gap_max = 140
-        vertical_offset_min = -5
-        vertical_offset_max = 10
-        min_platform_y = 310
-        max_platform_y = 340
-        while self.platforms[-1].x + self.platforms[-1].width < WIDTH:
-            gap = random.randint(safe_gap_min, safe_gap_max)
-            new_x = self.platforms[-1].x + self.platforms[-1].width + gap
-            new_y = self.platforms[-1].y + random.randint(vertical_offset_min, vertical_offset_max)
-            new_y = max(min_platform_y, min(new_y, max_platform_y))
-            self.platforms.append(Platform(new_x, new_y))
-    
+        self.coins_collected = 0
+
     def process_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            # Keyboard input:
+            # Keyboard input
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if self.player.on_ground:
                         self.player.charging = True
-                        self.player.jump_charge = MIN_JUMP_STRENGTH
+                        self.player.jump_charge = c.MIN_JUMP_STRENGTH
                 if event.key == pygame.K_x:
                     self.boing_sound.play()
                     if self.player.on_ground:
-                        self.player.vel_y = -MIN_JUMP_STRENGTH
+                        self.player.vel_y = -c.MIN_JUMP_STRENGTH
                     elif not self.player.on_ground and self.player.can_double_jump:
-                        self.player.vel_y = -MIN_JUMP_STRENGTH
+                        self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.player.can_double_jump = False
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE and self.player.charging:
@@ -79,18 +65,19 @@ class Game:
                         self.player.vel_y = -self.player.jump_charge
                     self.player.charging = False
                     self.player.jump_charge = 0
-            # Joystick input:
+            
+            # Joystick input
             if event.type == pygame.JOYBUTTONDOWN:
-                if event.button == 0:
+                if event.button == 0:  # e.g. 'A' on many controllers
                     if self.player.on_ground:
                         self.player.charging = True
-                        self.player.jump_charge = MIN_JUMP_STRENGTH
-                if event.button == 2:
+                        self.player.jump_charge = c.MIN_JUMP_STRENGTH
+                if event.button == 2:  # e.g. 'X' on many controllers
                     self.boing_sound.play()
                     if self.player.on_ground:
-                        self.player.vel_y = -MIN_JUMP_STRENGTH
+                        self.player.vel_y = -c.MIN_JUMP_STRENGTH
                     elif not self.player.on_ground and self.player.can_double_jump:
-                        self.player.vel_y = -MIN_JUMP_STRENGTH
+                        self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.player.can_double_jump = False
             if event.type == pygame.JOYBUTTONUP:
                 if event.button == 0 and self.player.charging:
@@ -99,156 +86,72 @@ class Game:
                         self.player.vel_y = -self.player.jump_charge
                     self.player.charging = False
                     self.player.jump_charge = 0
-    
+
     def update_input(self) -> None:
         keys = pygame.key.get_pressed()
+        # Charging jump
         if keys[pygame.K_SPACE] and self.player.charging and self.player.on_ground:
-            self.player.jump_charge += CHARGE_RATE
-            if self.player.jump_charge > MAX_JUMP_STRENGTH:
-                self.player.jump_charge = MAX_JUMP_STRENGTH
+            self.player.jump_charge += c.CHARGE_RATE
+            if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
+                self.player.jump_charge = c.MAX_JUMP_STRENGTH
+        # Joystick
         if joystick is not None and joystick.get_button(0) and self.player.charging and self.player.on_ground:
-            self.player.jump_charge += CHARGE_RATE
-            if self.player.jump_charge > MAX_JUMP_STRENGTH:
-                self.player.jump_charge = MAX_JUMP_STRENGTH
-    
+            self.player.jump_charge += c.CHARGE_RATE
+            if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
+                self.player.jump_charge = c.MAX_JUMP_STRENGTH
+
     def update_objects(self) -> None:
-        for platform in self.platforms[:]:
-            platform.move()
-            if platform.off_screen():
-                self.platforms.remove(platform)
-        for obstacle in self.obstacles[:]:
-            obstacle.move()
-            if obstacle.off_screen():
-                self.obstacles.remove(obstacle)
-        for coin in self.star_coins[:]:
-            coin.x -= SPEED
-            if coin.x + coin.width < 0:
-                self.star_coins.remove(coin)
-    
-    def spawn_new_platforms(self) -> None:
-        safe_gap_min = 50
-        safe_gap_max = 140
-        vertical_offset_min = -5
-        vertical_offset_max = 10
-        min_platform_y = 310
-        max_platform_y = 340
-        
-        while self.platforms and self.platforms[-1].x + self.platforms[-1].width < WIDTH:
-            gap = random.randint(safe_gap_min, safe_gap_max)
-            new_x = self.platforms[-1].x + self.platforms[-1].width + gap
-            new_y = self.platforms[-1].y + random.randint(vertical_offset_min, vertical_offset_max)
-            new_y = max(min_platform_y, min(new_y, max_platform_y))
-            new_platform = Platform(new_x, new_y)
-            self.platforms.append(new_platform)
-            # Spawn obstacles on this platform ensuring at least 150 pixels apart.
-            if random.random() < 0.5:
-                num_obs = random.randint(1, 2)
-                obs_positions = []
-                for i in range(num_obs):
-                    attempts = 0
-                    candidate = None
-                    while attempts < 10:
-                        candidate = new_platform.x + random.randint(0, new_platform.width - OBSTACLE_WIDTH)
-                        valid = True
-                        for pos in obs_positions:
-                            if abs(candidate - pos) < 150:
-                                valid = False
-                                break
-                        if valid:
-                            obs_positions.append(candidate)
-                            break
-                        attempts += 1
-                for pos in obs_positions:
-                    obs = Obstacle(new_platform, self.pokemon_images)
-                    obs.x = pos
-                    self.obstacles.append(obs)
-            # Spawn a coin if possible, ensuring it's at least 100 pixels away from obstacles.
-            if self.coins_spawned < 3 and random.random() < 0.3:
-                placed = False
-                attempts = 0
-                while not placed and attempts < 5:
-                    coin_x = new_platform.x + random.randint(0, new_platform.width - COIN_SIZE)
-                    coin_y = new_platform.y - 50
-                    coin_rect = pygame.Rect(coin_x, coin_y, COIN_SIZE, COIN_SIZE)
-                    safe = True
-                    for obstacle in self.obstacles:
-                        if new_platform.x <= obstacle.x <= new_platform.x + new_platform.width:
-                            obs_rect = pygame.Rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
-                            # Here, instead of inflating, we deflate the obstacle rect to allow a few pixels of overlap.
-                            if coin_rect.colliderect(obs_rect.inflate(-COLLISION_TOLERANCE * 2, -COLLISION_TOLERANCE * 2)):
-                                safe = False
-                                break
-                    if safe:
-                        self.star_coins.append(StarCoin(coin_x, coin_y, self.coin_image))
-                        self.coins_spawned += 1
-                        placed = True
-                    attempts += 1
-    
-    def check_collisions(self) -> bool:
-        """Return True if the player collides with an obstacle (using collision tolerance)."""
-        player_rect = pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)
-        for obstacle in self.obstacles:
-            obs_rect = pygame.Rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
-            # Deflate the obstacle rect so that collision only triggers if player overlaps more than a few pixels.
-            if player_rect.colliderect(obs_rect.inflate(-COLLISION_TOLERANCE * 2, -COLLISION_TOLERANCE * 2)):
-                return True
-        return False
-    
-    def draw_game(self, remaining_time: float, coins_collected: int) -> None:
-        self.player.draw(self.screen)
-        self.spikes.draw(self.screen)
-        for platform in self.platforms:
-            platform.draw(self.screen)
-        for obstacle in self.obstacles:
-            obstacle.draw(self.screen)
-        for coin in self.star_coins:
-            coin.draw(self.screen)
-        timer_text = self.font.render(f"Time: {int(remaining_time)}", True, BLACK)
-        self.screen.blit(timer_text, (10, 10))
-        coin_text = self.font.render(f"Coins: {coins_collected}", True, BLACK)
-        coin_rect_disp = coin_text.get_rect(topright=(WIDTH - 10, 10))
-        self.screen.blit(coin_text, coin_rect_disp)
-    
+        self.level_manager.update_platforms()
+        self.level_manager.update_obstacles()
+        self.level_manager.update_coins()
+
     def run(self) -> None:
-        self.coins_spawned = 0
+        self.level_manager.coins_spawned = 0
         self.coins_collected = 0
         self.start_ticks = pygame.time.get_ticks()
         
         running = True
         while running:
-            self.screen.fill(WHITE)
+            self.screen.fill(c.WHITE)
             elapsed_time = (pygame.time.get_ticks() - self.start_ticks) / 1000.0
-            remaining_time = max(0, LEVEL_DURATION - elapsed_time)
+            remaining_time = max(0, c.LEVEL_DURATION - elapsed_time)
             
             self.process_events()
             self.update_input()
             self.update_objects()
-            self.spawn_new_platforms()
-            
-            self.player.move(self.platforms)
-            
+            self.level_manager.spawn_new_platforms(c.WIDTH)
+
+            # Let the Player handle collisions with current platforms
+            self.player.move(self.level_manager.platforms)
+
             # Check coin collection
             player_rect = pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)
-            for coin in self.star_coins[:]:
+            for coin in self.level_manager.star_coins[:]:
                 if player_rect.colliderect(coin.get_rect()):
-                    self.star_coins.remove(coin)
+                    self.level_manager.star_coins.remove(coin)
                     self.coins_collected += 1
             
-            self.draw_game(remaining_time, self.coins_collected)
-            
-            if self.check_collisions():
+            # Draw everything
+            self.draw_game(remaining_time)
+
+            # Check collisions with obstacles
+            if self.level_manager.check_obstacle_collisions(player_rect):
                 running = False
-            if self.player.y + self.player.height >= HEIGHT - SPIKE_HEIGHT:
+
+            # Check if player fell into spikes
+            if self.player.y + self.player.height >= c.HEIGHT - c.SPIKE_HEIGHT:
                 running = False
+
+            # Check time
             if remaining_time <= 0:
                 running = False
-            
+
             pygame.display.update()
             self.clock.tick(30)
-        
-        # Game Over screen
-        over_text = self.font.render("Game Over! Press any key or Y button to restart.", True, RED)
-        over_rect = over_text.get_rect(center=(WIDTH//2, HEIGHT//2))
+
+        # Game Over
+        over_text = self.font.render("Game Over! Press any key or Y button to restart.", True, c.RED)
+        over_rect = over_text.get_rect(center=(c.WIDTH//2, c.HEIGHT//2))
         self.screen.blit(over_text, over_rect)
         pygame.display.update()
         
@@ -261,8 +164,27 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     waiting = False
                 if event.type == pygame.JOYBUTTONDOWN:
-                    if event.button == 3:
+                    if event.button == 3:  # 'Y' on some controllers
                         waiting = False
+
+    def draw_game(self, remaining_time):
+        self.player.draw(self.screen)
+        self.spikes.draw(self.screen)
+        
+        # Draw platforms, obstacles, coins
+        for platform in self.level_manager.platforms:
+            platform.draw(self.screen)
+        for obs in self.level_manager.obstacles:
+            obs.draw(self.screen)
+        for coin in self.level_manager.star_coins:
+            coin.draw(self.screen)
+
+        timer_text = self.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
+        self.screen.blit(timer_text, (10, 10))
+
+        coin_text = self.font.render(f"Coins: {self.coins_collected}", True, c.BLACK)
+        coin_rect_disp = coin_text.get_rect(topright=(c.WIDTH - 10, 10))
+        self.screen.blit(coin_text, coin_rect_disp)
 
 def main() -> None:
     while True:
