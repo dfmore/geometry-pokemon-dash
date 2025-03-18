@@ -1,16 +1,20 @@
 import pygame
-import src.config as c  # So we can read WIDTH, HEIGHT, and FULLSCREEN
+import src.config as c
 
 pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
 pygame.mixer.init()
 
-# If FULLSCREEN is True, create a fullscreen display
 if c.FULLSCREEN:
-    screen = pygame.display.set_mode((c.WIDTH, c.HEIGHT), pygame.FULLSCREEN)
+    # Use the user's current desktop size in fullscreen:
+    info = pygame.display.Info()
+    screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
 else:
-    # Otherwise, create a window of the specified size
+    # Windowed mode at the config resolution
     screen = pygame.display.set_mode((c.WIDTH, c.HEIGHT))
+
+# Store the actual final window size so other code can see it
+c.WIDTH, c.HEIGHT = screen.get_size()
 
 from src.game import main
 

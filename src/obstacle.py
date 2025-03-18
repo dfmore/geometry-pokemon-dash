@@ -1,16 +1,18 @@
 # obstacle.py
 import pygame
 import random
-from src.config import OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED
+import src.config as c
 
 class Obstacle:
     def __init__(self, platform, pokemon_images):
-        self.x = platform.x + random.randint(0, platform.width - OBSTACLE_WIDTH)
-        self.y = platform.y - OBSTACLE_HEIGHT
-        self.width = OBSTACLE_WIDTH
-        self.height = OBSTACLE_HEIGHT
-        self.speed = SPEED
+        # Choose a random pre-scaled Pokémon image
         self.image = random.choice(pokemon_images)
+        self.width, self.height = self.image.get_size()
+
+        # By default, place it somewhere on the platform in X, or override in level_manager
+        self.x = platform.x
+        self.y = platform.y - self.height
+        self.speed = c.SPEED
 
     def move(self):
         self.x -= self.speed
@@ -19,4 +21,4 @@ class Obstacle:
         screen.blit(self.image, (self.x, self.y))
 
     def off_screen(self):
-        return self.x + self.width < 0
+        return (self.x + self.width) < 0

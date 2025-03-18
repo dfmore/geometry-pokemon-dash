@@ -1,4 +1,5 @@
 # game.py
+
 import pygame
 import random
 import sys
@@ -7,8 +8,9 @@ from src.assets import load_assets
 from src.player import Player
 from src.spikes import Spikes
 from src.game_platform import Platform
-from src.level_manager import LevelManager  # Our new spawner/manager
+from src.level_manager import LevelManager
 
+# If a joystick is present, initialize it once
 if pygame.joystick.get_count() > 0:
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
@@ -27,15 +29,19 @@ class Game:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
         
-        # Level manager holds platforms/obstacles/coins
+        # Level manager to handle platform/obstacle/coin creation
         self.level_manager = LevelManager(self.pokemon_images, self.coin_image)
 
-        # Insert an initial platform
-        first_platform = Platform(100, 320)
+        # Create an initial platform near the bottom of the screen
+        # For example, ~70% down the screen:
+        initial_y = int(0.7 * c.HEIGHT)
+        first_platform = Platform(100, initial_y)
         self.level_manager.platforms.append(first_platform)
-        # Generate enough initial platforms to fill the screen
+        
+        # Generate enough platforms to fill up the screen
         self.level_manager.generate_initial_platforms(c.WIDTH)
         
+        # Create the Player and Spikes
         self.player = Player()
         self.spikes = Spikes()
 
@@ -43,19 +49,27 @@ class Game:
         self.coins_collected = 0
 
     def process_events(self) -> None:
+        """
+        Handles all input: keyboard, joystick, window events.
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             # Keyboard input
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
+
+                # Begin charging jump if on ground
                 if event.key == pygame.K_SPACE:
                     if self.player.on_ground:
                         self.player.charging = True
                         self.player.jump_charge = c.MIN_JUMP_STRENGTH
+
+                # Instant jump (X key) -> check ground or double-jump
                 if event.key == pygame.K_x:
                     if self.player.on_ground:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
@@ -64,6 +78,7 @@ class Game:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.player.can_double_jump = False
                         self.boing_sound.play()
+
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE and self.player.charging:
                     if self.player.on_ground:
@@ -71,14 +86,17 @@ class Game:
                         self.boing_sound.play()
                     self.player.charging = False
                     self.player.jump_charge = 0
-            
+
             # Joystick input
             if event.type == pygame.JOYBUTTONDOWN:
-                if event.button == 0:  # e.g. 'A' on many controllers
+                # A button
+                if event.button == 0:
                     if self.player.on_ground:
                         self.player.charging = True
                         self.player.jump_charge = c.MIN_JUMP_STRENGTH
-                if event.button == 2:  # e.g. 'X' on many controllers
+
+                # X button
+                if event.button == 2:
                     if self.player.on_ground:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.boing_sound.play()
@@ -86,7 +104,9 @@ class Game:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.player.can_double_jump = False
                         self.boing_sound.play()
+
             if event.type == pygame.JOYBUTTONUP:
+                # Releasing the A button
                 if event.button == 0 and self.player.charging:
                     if self.player.on_ground:
                         self.player.vel_y = -self.player.jump_charge
@@ -95,24 +115,35 @@ class Game:
                     self.player.jump_charge = 0
 
     def update_input(self) -> None:
+        """
+        Handles continuous input (keys held down), such as charging jump.
+        """
         keys = pygame.key.get_pressed()
-        # Charging jump
+
+        # Charge jump while holding SPACE if on ground
         if keys[pygame.K_SPACE] and self.player.charging and self.player.on_ground:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
-        # Joystick
+
+        # Joystick continuous check
         if joystick is not None and joystick.get_button(0) and self.player.charging and self.player.on_ground:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
 
     def update_objects(self) -> None:
+        """
+        Updates movement of platforms, obstacles, coins, etc.
+        """
         self.level_manager.update_platforms()
         self.level_manager.update_obstacles()
         self.level_manager.update_coins()
 
     def run(self) -> None:
+        """
+        Main game loop: handles events, updates logic, draws everything.
+        """
         self.level_manager.coins_spawned = 0
         self.coins_collected = 0
         self.start_ticks = pygame.time.get_ticks()
@@ -128,11 +159,12 @@ class Game:
             self.update_objects()
             self.level_manager.spawn_new_platforms(c.WIDTH)
 
-            # Let the Player handle collisions with current platforms
+            # Player movement and collisions with platforms
             self.player.move(self.level_manager.platforms)
 
             # Check coin collection
-            player_rect = pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)
+            player_rect = pygame.Rect(self.player.x, self.player.y,
+                                      self.player.width, self.player.height)
             for coin in self.level_manager.star_coins[:]:
                 if player_rect.colliderect(coin.get_rect()):
                     self.level_manager.star_coins.remove(coin)
@@ -142,15 +174,18 @@ class Game:
             # Draw everything
             self.draw_game(remaining_time)
 
-            # Check collisions with obstacles
+            # Check obstacle collisions
             if self.level_manager.check_obstacle_collisions(player_rect):
                 running = False
 
             # Check if player fell into spikes
-            if self.player.y + self.player.height >= c.HEIGHT - c.SPIKE_HEIGHT:
+            # SPIKE_HEIGHT_FRAC => fraction-based spike height
+            # Compare the bottom of the player to (c.HEIGHT - spike_height)
+            spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
+            if (self.player.y + self.player.height) >= (c.HEIGHT - spike_height):
                 running = False
 
-            # Check time
+            # Check if time is up
             if remaining_time <= 0:
                 running = False
 
@@ -159,7 +194,7 @@ class Game:
 
         # Game Over
         over_text = self.font.render("Game Over! Press any key or Y button to restart.", True, c.RED)
-        over_rect = over_text.get_rect(center=(c.WIDTH//2, c.HEIGHT//2))
+        over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
         self.screen.blit(over_text, over_rect)
         pygame.display.update()
         
@@ -172,14 +207,18 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     waiting = False
                 if event.type == pygame.JOYBUTTONDOWN:
-                    if event.button == 3:  # 'Y' on some controllers
+                    # 'Y' button
+                    if event.button == 3:
                         waiting = False
 
-    def draw_game(self, remaining_time):
+    def draw_game(self, remaining_time: float) -> None:
+        """
+        Draws the player, spikes, platforms, obstacles, coins, and UI text.
+        """
         self.player.draw(self.screen)
         self.spikes.draw(self.screen)
         
-        # Draw platforms, obstacles, coins
+        # Platforms, obstacles, coins
         for platform in self.level_manager.platforms:
             platform.draw(self.screen)
         for obs in self.level_manager.obstacles:
@@ -187,14 +226,19 @@ class Game:
         for coin in self.level_manager.star_coins:
             coin.draw(self.screen)
 
+        # Timer
         timer_text = self.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
         self.screen.blit(timer_text, (10, 10))
 
+        # Coin count
         coin_text = self.font.render(f"Coins: {self.coins_collected}", True, c.BLACK)
         coin_rect_disp = coin_text.get_rect(topright=(c.WIDTH - 10, 10))
         self.screen.blit(coin_text, coin_rect_disp)
 
 def main() -> None:
+    """
+    Creates a new Game instance and runs it in an endless loop.
+    """
     while True:
         game = Game()
         game.run()

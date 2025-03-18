@@ -1,23 +1,29 @@
 # player.py
 import pygame
-from src.config import SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH
+import src.config as c
 
 class Player:
     def __init__(self):
+        # Let's treat it as a square: side = int(SQUARE_WIDTH_FRAC * c.WIDTH)
+        side = int(c.SQUARE_WIDTH_FRAC * c.WIDTH)
+        self.width = side
+        self.height = side
+
+        # Starting position
         self.x = 100
         self.y = 320
-        self.width = SQUARE_SIZE
-        self.height = SQUARE_SIZE
+
         self.vel_y = 0
         self.on_ground = True
         self.charging = False
         self.jump_charge = 0
-        self.can_double_jump = True  # Reset when landing
+        self.can_double_jump = True
 
     def move(self, platforms):
-        self.vel_y += GRAVITY
+        self.vel_y += c.GRAVITY
         self.y += self.vel_y
         self.on_ground = False
+
         player_rect = pygame.Rect(self.x, self.y, self.width, self.height)
         for platform in platforms:
             platform_rect = pygame.Rect(platform.x, platform.y, platform.width, platform.height)
@@ -29,4 +35,5 @@ class Player:
                 player_rect.y = self.y
 
     def draw(self, screen):
-        pygame.draw.rect(screen, (0, 0, 255), (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(screen, (0, 0, 255),
+                         (self.x, self.y, self.width, self.height))
