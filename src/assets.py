@@ -15,4 +15,5 @@ def load_assets():
     assets['coin_image'] = pygame.transform.scale(pygame.image.load("assets/star_coin.gif"), (COIN_SIZE, COIN_SIZE))
     # Load sound
     assets['boing_sound'] = pygame.mixer.Sound("assets/boing.mp3")
+    assets['coin_sound'] = pygame.mixer.Sound("assets/coin.mp3")
     return assets

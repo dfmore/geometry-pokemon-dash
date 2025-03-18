@@ -20,6 +20,7 @@ class Game:
         self.pokemon_images = self.assets['pokemon_images']
         self.coin_image = self.assets['coin_image']
         self.boing_sound = self.assets['boing_sound']
+        self.coin_sound = self.assets['coin_sound']
         
         self.screen = pygame.display.get_surface()
         self.clock = pygame.time.Clock()
@@ -130,6 +131,7 @@ class Game:
                 if player_rect.colliderect(coin.get_rect()):
                     self.level_manager.star_coins.remove(coin)
                     self.coins_collected += 1
+                    self.coin_sound.play()
             
             # Draw everything
             self.draw_game(remaining_time)
