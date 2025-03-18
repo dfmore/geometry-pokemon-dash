@@ -1,6 +1,6 @@
 # assets.py
 import pygame
-from config import OBSTACLE_WIDTH, OBSTACLE_HEIGHT, COIN_SIZE
+from src.config import OBSTACLE_WIDTH, OBSTACLE_HEIGHT, COIN_SIZE
 
 def load_assets():
     assets = {}

@@ -1,6 +1,6 @@
 # spikes.py
 import pygame
-from config import WIDTH, SPIKE_HEIGHT, HEIGHT
+from src.config import WIDTH, SPIKE_HEIGHT, HEIGHT
 
 class Spikes:
     def __init__(self):

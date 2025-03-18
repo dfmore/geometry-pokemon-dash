@@ -1,6 +1,6 @@
 # game_platform.py
 import pygame
-from config import PLATFORM_WIDTH, PLATFORM_HEIGHT, SPEED
+from src.config import PLATFORM_WIDTH, PLATFORM_HEIGHT, SPEED
 
 class Platform:
     def __init__(self, x, y):

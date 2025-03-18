@@ -5,7 +5,7 @@ pygame.init()
 pygame.mixer.init()
 pygame.display.set_mode((800, 400))
 
-from game import main
+from src.game import main
 
 if __name__ == "__main__":
     main()

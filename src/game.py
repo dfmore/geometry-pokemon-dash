@@ -1,11 +1,11 @@
 import pygame, random
-from config import WIDTH, HEIGHT, WHITE, RED, BLUE, GREEN, BLACK, LEVEL_DURATION, SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED, PLATFORM_WIDTH, PLATFORM_HEIGHT, SPIKE_HEIGHT, COIN_SIZE, COLLISION_TOLERANCE
-from assets import load_assets
-from player import Player
-from game_platform import Platform
-from obstacle import Obstacle
-from coin import StarCoin
-from spikes import Spikes
+from src.config import WIDTH, HEIGHT, WHITE, RED, BLUE, GREEN, BLACK, LEVEL_DURATION, SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED, PLATFORM_WIDTH, PLATFORM_HEIGHT, SPIKE_HEIGHT, COIN_SIZE, COLLISION_TOLERANCE
+from src.assets import load_assets
+from src.player import Player
+from src.game_platform import Platform
+from src.obstacle import Obstacle
+from src.coin import StarCoin
+from src.spikes import Spikes
 
 # Cache the joystick instance if available
 if pygame.joystick.get_count() > 0:
@@ -153,7 +153,7 @@ def run_game():
                     obs = Obstacle(new_platform, pokemon_images)
                     obs.x = pos
                     obstacles.append(obs)
-            # Spawn a coin if possible, ensuring it's at least 100 pixels away from obstacles on this platform.
+            # Spawn a coin if possible, ensuring it's at least 100 pixels away from src.obstacles on this platform.
             if coins_spawned < 3 and random.random() < 0.3:
                 placed = False
                 attempts = 0

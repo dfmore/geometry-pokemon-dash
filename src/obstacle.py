@@ -1,7 +1,7 @@
 # obstacle.py
 import pygame
 import random
-from config import OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED
+from src.config import OBSTACLE_WIDTH, OBSTACLE_HEIGHT, SPEED
 
 class Obstacle:
     def __init__(self, platform, pokemon_images):

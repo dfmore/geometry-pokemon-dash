@@ -1,6 +1,6 @@
 # player.py
 import pygame
-from config import SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH
+from src.config import SQUARE_SIZE, GRAVITY, CHARGE_RATE, MIN_JUMP_STRENGTH, MAX_JUMP_STRENGTH
 
 class Player:
     def __init__(self):

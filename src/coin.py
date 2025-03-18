@@ -1,6 +1,6 @@
 # coin.py
 import pygame
-from config import COIN_SIZE
+from src.config import COIN_SIZE
 
 class StarCoin:
     def __init__(self, x, y, coin_image):
