@@ -39,3 +39,15 @@ Before running the game, ensure you have the following installed:
    ```
 
 3. The game window will open, and you can start playing!
+
+## Game Functionality and Controls
+
+- **Spacebar**: Press to charge and release to jump.
+- **X Key**: Press to perform a jump (single or double jump).
+- **Joystick Button 0**: Press to charge and release to jump.
+- **Joystick Button 2**: Press to perform a jump (single or double jump).
+- **Joystick Button 3**: Press to restart the game after a game over.
+
+The objective of the game is to navigate through the levels, avoid obstacles, and collect coins. The game features various platforms, spikes, and other challenges that you need to overcome to progress.
+
+Enjoy playing Geometry Pokemon Dash!
