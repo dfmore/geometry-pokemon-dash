@@ -57,17 +57,18 @@ class Game:
                         self.player.charging = True
                         self.player.jump_charge = c.MIN_JUMP_STRENGTH
                 if event.key == pygame.K_x:
-                    self.boing_sound.play()
                     if self.player.on_ground:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
+                        self.boing_sound.play()
                     elif not self.player.on_ground and self.player.can_double_jump:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.player.can_double_jump = False
+                        self.boing_sound.play()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE and self.player.charging:
-                    self.boing_sound.play()
                     if self.player.on_ground:
                         self.player.vel_y = -self.player.jump_charge
+                        self.boing_sound.play()
                     self.player.charging = False
                     self.player.jump_charge = 0
             
@@ -78,17 +79,18 @@ class Game:
                         self.player.charging = True
                         self.player.jump_charge = c.MIN_JUMP_STRENGTH
                 if event.button == 2:  # e.g. 'X' on many controllers
-                    self.boing_sound.play()
                     if self.player.on_ground:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
+                        self.boing_sound.play()
                     elif not self.player.on_ground and self.player.can_double_jump:
                         self.player.vel_y = -c.MIN_JUMP_STRENGTH
                         self.player.can_double_jump = False
+                        self.boing_sound.play()
             if event.type == pygame.JOYBUTTONUP:
                 if event.button == 0 and self.player.charging:
-                    self.boing_sound.play()
                     if self.player.on_ground:
                         self.player.vel_y = -self.player.jump_charge
+                        self.boing_sound.play()
                     self.player.charging = False
                     self.player.jump_charge = 0
 
