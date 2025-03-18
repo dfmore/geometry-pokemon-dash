@@ -25,13 +25,22 @@ class Player:
         self.on_ground = False
 
         player_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
         for platform in platforms:
-            platform_rect = pygame.Rect(platform.x, platform.y, platform.width, platform.height)
+            platform_rect = pygame.Rect(platform.x, platform.y,
+                                        platform.width, platform.height)
+            
+            # Inflate horizontally by PLATFORM_EDGE_TOLERANCE on each side
+            platform_rect.x -= c.PLATFORM_EDGE_TOLERANCE
+            platform_rect.width += 2 * c.PLATFORM_EDGE_TOLERANCE
+
             if self.vel_y > 0 and player_rect.colliderect(platform_rect):
                 self.y = platform.y - self.height
                 self.vel_y = 0
                 self.on_ground = True
                 self.can_double_jump = True
+
+                # Update the player_rect's y so subsequent checks use the corrected position
                 player_rect.y = self.y
 
     def draw(self, screen):

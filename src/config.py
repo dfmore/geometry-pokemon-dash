@@ -9,10 +9,11 @@ HEIGHT = 800
 ###############################################################################
 # For example, if you used 250 px on a 1200 px-wide screen for platform width,
 # that's about 0.2083. We'll store it as a fraction. Similarly for heights.
-PLATFORM_WIDTH_FRAC = 250/1200.0
-PLATFORM_HEIGHT_FRAC = 10/800.0
+PLATFORM_WIDTH_FRAC = 250/WIDTH
+PLATFORM_HEIGHT_FRAC = 10/HEIGHT
+PLATFORM_EDGE_TOLERANCE = 5
 
-SPIKE_HEIGHT_FRAC = 20/800.0  # e.g. 20 px on an 800-tall screen -> 0.025
+SPIKE_HEIGHT_FRAC = 20/HEIGHT  # e.g. 20 px on an 800-tall screen -> 0.025
 SPIKE_COUNT = 20
 SPIKE_COLOR = (255, 0, 0)  # bright red
 
@@ -21,13 +22,13 @@ SPIKE_COLOR = (255, 0, 0)  # bright red
 # We'll scale obstacles by OBSTACLE_WIDTH_FRAC * actual window width,
 # then derive height from the image's aspect ratio.
 ###############################################################################
-OBSTACLE_WIDTH_FRAC = 40/1200.0  # e.g. 40 px on a 1200 px width -> ~0.0333
+OBSTACLE_WIDTH_FRAC = 40/WIDTH  # e.g. 40 px on a 1200 px width -> ~0.0333
 # We'll skip an explicit OBSTACLE_HEIGHT_FRAC so we can preserve ratio automatically.
 
-COIN_WIDTH_FRAC = 30/1200.0  # e.g. 30 px on a 1200 px width -> 0.025
+COIN_WIDTH_FRAC = 30/WIDTH  # e.g. 30 px on a 1200 px width -> 0.025
 # We'll skip an explicit height fraction for coins, too, to preserve ratio.
 
-SQUARE_WIDTH_FRAC = 30/1200.0  # Player's square width fraction.
+SQUARE_WIDTH_FRAC = 30/WIDTH  # Player's square width fraction.
 # We'll also skip height fraction for the player's rectangle if we want it truly "square."
 
 ###############################################################################
@@ -56,7 +57,7 @@ SPAWN_SAFE_GAP_MIN = 50
 SPAWN_SAFE_GAP_MAX = 140
 
 # Keep the vertical offsets in absolute pixels if you like random lumps
-SPAWN_VERTICAL_OFFSET_MIN = -195
+SPAWN_VERTICAL_OFFSET_MIN = -200
 SPAWN_VERTICAL_OFFSET_MAX = 200
 
 # Make min/max platform Y fraction-based, so it scales with screen size
