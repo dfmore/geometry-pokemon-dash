@@ -1,10 +1,3 @@
-# config.py
-#
-# Approach 2: fraction-based scaling for shapes, plus a consistent "desired" width/height
-# that gets overridden in main.py if you go fullscreen. We removed old absolute
-# constants for platform/obstacle/coin sizes and replaced them with fraction-based
-# or ratio-based logic.
-
 FULLSCREEN = True
 
 # The "starting" or "windowed" resolution
@@ -44,7 +37,7 @@ GRAVITY = 1
 MIN_JUMP_STRENGTH = 15
 MAX_JUMP_STRENGTH = 45
 CHARGE_RATE = 1
-SPEED = 5
+SPEED = 6
 
 LEVEL_DURATION = 100  # seconds
 
@@ -54,7 +47,7 @@ BLUE  = (0, 0, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 
-COLLISION_TOLERANCE = 5
+COLLISION_TOLERANCE = 6
 
 ###############################################################################
 # Spawning / platform / obstacle config
@@ -63,18 +56,18 @@ SPAWN_SAFE_GAP_MIN = 50
 SPAWN_SAFE_GAP_MAX = 140
 
 # Keep the vertical offsets in absolute pixels if you like random lumps
-SPAWN_VERTICAL_OFFSET_MIN = -180
+SPAWN_VERTICAL_OFFSET_MIN = -195
 SPAWN_VERTICAL_OFFSET_MAX = 200
 
 # Make min/max platform Y fraction-based, so it scales with screen size
-SPAWN_MIN_PLATFORM_Y = 0.30
+SPAWN_MIN_PLATFORM_Y = 0.35
 SPAWN_MAX_PLATFORM_Y = 0.95
 
-OBSTACLE_SPAWN_CHANCE = 0.5
+OBSTACLE_SPAWN_CHANCE = 0.7
 OBSTACLE_MIN_SPACING = 150
 OBSTACLE_MAX_PER_PLATFORM = 2
-OBSTACLE_SPAWN_ATTEMPTS = 10
+OBSTACLE_SPAWN_ATTEMPTS = 20
 
 COIN_SPAWN_CHANCE = 0.3
-MAX_COINS = 3
+MAX_COINS = 5
 COIN_SPAWN_ATTEMPTS = 5
