@@ -1,6 +1,7 @@
 # game.py
 import pygame
 import random
+import sys
 import src.config as c
 from src.assets import load_assets
 from src.player import Player
@@ -45,9 +46,12 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                exit()
+                sys.exit()
             # Keyboard input
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
                 if event.key == pygame.K_SPACE:
                     if self.player.on_ground:
                         self.player.charging = True
