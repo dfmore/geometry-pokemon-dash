@@ -38,6 +38,8 @@ GRAVITY = 1
 MIN_JUMP_STRENGTH = 15
 MAX_JUMP_STRENGTH = 45
 CHARGE_RATE = 1
+COYOTE_FRAMES = 5         # number of frames you can still jump after leaving ground
+JUMP_BUFFER_FRAMES = 5    # number of frames jump is remembered before landing
 SPEED = 6
 
 LEVEL_DURATION = 100  # seconds
