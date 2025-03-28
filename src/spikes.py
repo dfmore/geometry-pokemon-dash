@@ -9,7 +9,6 @@ class Spikes:
 
     def draw(self, screen):
         spike_width = c.WIDTH // c.SPIKE_COUNT
-
         for i in range(c.SPIKE_COUNT):
             left_x = i * spike_width
             right_x = (i + 1) * spike_width

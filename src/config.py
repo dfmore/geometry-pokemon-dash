@@ -38,32 +38,29 @@ SPEED = 6
 LEVEL_DURATION = 40  # seconds
 
 WHITE = (255, 255, 255)
-RED   = (255, 0, 0)
-BLUE  = (0, 0, 255)
-GREEN = (0, 255, 0)
-BLACK = (0, 0, 0)
+RED   = (255,   0,   0)
+BLUE  = (  0,   0, 255)
+GREEN = (  0, 255,   0)
+BLACK = (  0,   0,   0)
 
 COLLISION_TOLERANCE = 7
 
 ###############################################################################
 # Define 5 "seeded param-based" levels.
-# You can tweak each dictionary's parameters to shape your level.
 ###############################################################################
 LEVELS = [
     {
         "name": "Level 1 (Easy)",
         "seed": 101,
-        # We'll still do 1 platform per second
         "safe_gap_min": 50,
         "safe_gap_max": 140,
         "vertical_offset_min": -30,
         "vertical_offset_max": 30,
         "min_platform_y": 450,
         "max_platform_y": 650,
-
         "obstacle_spawn_chance": 0.5,
-        "obstacle_max_per_platform": 1,    # For easy
-        "coin_chance": 0.4,  # optional
+        "obstacle_max_per_platform": 1,
+        "coin_chance": 0.4,
     },
     {
         "name": "Level 2",
@@ -74,9 +71,8 @@ LEVELS = [
         "vertical_offset_max": 45,
         "min_platform_y": 400,
         "max_platform_y": 800,
-
         "obstacle_spawn_chance": 0.4,
-        "obstacle_max_per_platform": 2,    # Harder
+        "obstacle_max_per_platform": 2,
         "coin_chance": 0.4,
     },
     {
@@ -88,9 +84,8 @@ LEVELS = [
         "vertical_offset_max": 75,
         "min_platform_y": 450,
         "max_platform_y": 800,
-
         "obstacle_spawn_chance": 0.4,
-        "obstacle_max_per_platform": 2,    # Harder
+        "obstacle_max_per_platform": 2,
         "coin_chance": 0.4,
     },
     {
@@ -102,9 +97,8 @@ LEVELS = [
         "vertical_offset_max": 95,
         "min_platform_y": 250,
         "max_platform_y": 900,
-
         "obstacle_spawn_chance": 0.5,
-        "obstacle_max_per_platform": 1,    # Harder
+        "obstacle_max_per_platform": 1,
         "coin_chance": 0.4,
     },
     {
@@ -116,28 +110,11 @@ LEVELS = [
         "vertical_offset_max": 135,
         "min_platform_y": 200,
         "max_platform_y": 1100,
-
         "obstacle_spawn_chance": 0.7,
-        "obstacle_max_per_platform": 2,    # Harder
+        "obstacle_max_per_platform": 2,
         "coin_chance": 0.3,
     }
 ]
 
 # Which level to load
 CURRENT_LEVEL = 0
-
-###############################################################################
-# (Optional) remove or comment out old random config that is no longer used:
-# SPAWN_SAFE_GAP_MIN = 50
-# SPAWN_SAFE_GAP_MAX = 140
-# SPAWN_VERTICAL_OFFSET_MIN = -200
-# SPAWN_VERTICAL_OFFSET_MAX = 200
-# SPAWN_MIN_PLATFORM_Y = 0.35
-# SPAWN_MAX_PLATFORM_Y = 0.95
-# OBSTACLE_SPAWN_CHANCE = 0.8
-# OBSTACLE_MIN_SPACING = 150
-# OBSTACLE_MAX_PER_PLATFORM = 1
-# OBSTACLE_SPAWN_ATTEMPTS = 5
-# COIN_SPAWN_CHANCE = 0.3
-# MAX_COINS = 5
-# COIN_SPAWN_ATTEMPTS = 5

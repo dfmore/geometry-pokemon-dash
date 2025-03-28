@@ -7,7 +7,6 @@ class Obstacle:
     def __init__(self, x, y, pokemon_images):
         self.image = random.choice(pokemon_images)
         self.width, self.height = self.image.get_size()
-
         self.x = x
         self.y = y
         self.speed = c.SPEED

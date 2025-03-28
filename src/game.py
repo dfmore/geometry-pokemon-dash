@@ -1,15 +1,14 @@
 # game.py
 
 import pygame
-import random
 import sys
 import src.config as c
 from src.assets import load_assets
 from src.player import Player
 from src.spikes import Spikes
-from src.game_platform import Platform
 from src.level_manager import LevelManager
 
+# Check for joystick/gamepad availability
 if pygame.joystick.get_count() > 0:
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
@@ -18,17 +17,19 @@ else:
 
 class Game:
     def __init__(self) -> None:
+        # Load assets (images, sounds, etc.)
         self.assets = load_assets()
         self.pokemon_images = self.assets['pokemon_images']
         self.coin_image = self.assets['coin_image']
         self.boing_sound = self.assets['boing_sound']
         self.coin_sound = self.assets['coin_sound']
         
+        # Primary rendering surface, timing, and font
         self.screen = pygame.display.get_surface()
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
         
-        # LevelManager loads the chosen level from config
+        # Level manager loads the chosen level from config
         self.level_manager = LevelManager(self.pokemon_images, self.coin_image)
         self.current_level_index = self.level_manager.level_index
 
@@ -36,19 +37,19 @@ class Game:
         self.player = Player()
         self.spikes = Spikes()
 
-        # Timers for coyote time + jump buffer for “charged” and “instant”
+        # Timers for coyote time + jump buffer (two types of jumps)
         self.coyote_frames_charged = 0
         self.jump_buffer_frames_charged = 0
         self.coyote_frames_instant = 0
         self.jump_buffer_frames_instant = 0
 
+        # Tracking time, coins, and completion
         self.start_ticks = pygame.time.get_ticks()
         self.coins_collected = 0
-
         self.level_complete = False
 
     # ------------------------------------------------------------------
-    # HELPER METHODS: Coyote Time & Jump Buffer
+    # COYOTE TIME & JUMP BUFFER HELPERS
     # ------------------------------------------------------------------
 
     def coyote_ground_frames_for(self, which_type: str) -> int:
@@ -84,18 +85,21 @@ class Game:
             self.jump_buffer_frames_instant = value
 
     # ------------------------------------------------------------------
-    # Jump Methods (DRY)
+    # JUMP METHODS
     # ------------------------------------------------------------------
 
     def handle_charged_jump_press(self) -> None:
+        # If we still have "coyote" ground frames left, begin charging
         if self.coyote_ground_frames_for('charged') > 0:
             self.player.charging = True
             self.player.jump_charge = c.MIN_JUMP_STRENGTH
             self.set_jump_buffer_frames('charged', 0)
         else:
+            # if no ground frames left, store the jump input for a few frames
             self.set_jump_buffer_frames('charged', c.JUMP_BUFFER_FRAMES)
 
     def handle_charged_jump_release(self) -> None:
+        # If we were charging, finalize the jump
         if self.player.charging:
             if self.player.on_ground:
                 self.player.vel_y = -self.player.jump_charge
@@ -104,20 +108,23 @@ class Game:
             self.player.jump_charge = 0
 
     def handle_instant_jump(self) -> None:
+        # "Instant" jump is triggered right away if on ground or within coyote frames
         if self.coyote_ground_frames_for('instant') > 0:
             self.player.vel_y = -c.MIN_JUMP_STRENGTH
             self.boing_sound.play()
             self.set_jump_buffer_frames('instant', 0)
         else:
+            # If in mid-air and we have a double jump available, use it
             if not self.player.on_ground and self.player.can_double_jump:
                 self.player.vel_y = -c.MIN_JUMP_STRENGTH
                 self.player.can_double_jump = False
                 self.boing_sound.play()
             else:
+                # else store the jump input (jump buffer)
                 self.set_jump_buffer_frames('instant', c.JUMP_BUFFER_FRAMES)
 
     # ------------------------------------------------------------------
-    # EVENT PROCESSING
+    # EVENT HANDLING
     # ------------------------------------------------------------------
 
     def process_events(self) -> None:
@@ -130,39 +137,37 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
-
-                if event.key == pygame.K_SPACE:
+                elif event.key == pygame.K_SPACE:
                     self.handle_charged_jump_press()
-
-                if event.key == pygame.K_x:
+                elif event.key == pygame.K_x:
                     self.handle_instant_jump()
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     self.handle_charged_jump_release()
 
+            # Joystick / gamepad
             if event.type == pygame.JOYBUTTONDOWN:
-                if event.button == 0:
+                if event.button == 0:  # e.g. 'A' on an Xbox controller
                     self.handle_charged_jump_press()
-                if event.button == 2:
+                elif event.button == 2:  # e.g. 'X' on an Xbox controller
                     self.handle_instant_jump()
 
             if event.type == pygame.JOYBUTTONUP:
                 if event.button == 0:
                     self.handle_charged_jump_release()
 
-    # ------------------------------------------------------------------
-    # CONTINUOUS INPUT => CHARGING
-    # ------------------------------------------------------------------
-
     def update_input(self) -> None:
+        """Check continuous inputs each frame (holding space to charge jump)."""
         keys = pygame.key.get_pressed()
 
+        # If space is held and we're charging on ground, keep increasing jump_charge
         if keys[pygame.K_SPACE] and self.player.charging and self.player.on_ground:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
 
+        # If the joystick button is held and we're charging on ground
         if joystick is not None and joystick.get_button(0) and self.player.charging and self.player.on_ground:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
@@ -178,7 +183,7 @@ class Game:
         self.level_manager.update_coins()
 
     # ------------------------------------------------------------------
-    # MAIN LOOP
+    # MAIN GAME LOOP
     # ------------------------------------------------------------------
 
     def run(self) -> None:
@@ -198,10 +203,10 @@ class Game:
             self.update_input()
             self.update_objects()
 
-            # Player movement
+            # Move player
             self.player.move(self.level_manager.platforms)
 
-            # Coyote + Jump Buffer
+            # Handle coyote + jump buffer
             if self.player.on_ground:
                 self.set_coyote_ground_frames('charged', c.COYOTE_FRAMES)
                 if self.jump_buffer_frames_for('charged') > 0:
@@ -216,7 +221,7 @@ class Game:
                 self.dec_coyote_ground_frames('charged')
                 self.dec_coyote_ground_frames('instant')
 
-            # Coin collection
+            # Check coin collection
             player_rect = pygame.Rect(self.player.x, self.player.y,
                                       self.player.width, self.player.height)
             for coin in self.level_manager.star_coins[:]:
@@ -225,15 +230,15 @@ class Game:
                     self.coins_collected += 1
                     self.coin_sound.play()
             
-            # Draw
+            # Draw everything
             self.draw_game(remaining_time)
 
-            # Obstacle collisions => the player died => end loop
+            # Check collisions
             if self.level_manager.check_obstacle_collisions(player_rect):
                 running = False  
                 self.level_complete = False
 
-            # Spikes => the player died => end loop
+            # Spikes => game over if player touches them
             spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
             if (self.player.y + self.player.height) >= (c.HEIGHT - spike_height):
                 running = False
@@ -247,87 +252,26 @@ class Game:
             pygame.display.update()
             self.clock.tick(30)
 
-        # End of loop => either died or time ran out
+        # End-of-loop => either died or time ran out
         if self.level_complete:
-            # Show "Level X Complete" and then proceed or end
-            over_text = self.font.render(
-                f"Level {self.current_level_index + 1} Complete! Press any key or Y to continue.",
-                True, c.RED
-            )
-            over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
-            self.screen.blit(over_text, over_rect)
-            pygame.display.update()
-
-            waiting = True
-            while waiting:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        exit()
-                    if event.type == pygame.KEYDOWN:
-                        waiting = False
-                    if event.type == pygame.JOYBUTTONDOWN:
-                        if event.button == 3:  # 'Y'
-                            waiting = False
-
-            # Move to next level if available
-            if self.current_level_index < len(c.LEVELS) - 1:
-                c.CURRENT_LEVEL += 1
-                main()  # re-run with next level
-            else:
-                # All levels complete
-                self.show_final_message("All levels completed! Thanks for playing.")
+            self.show_completion_screen()
         else:
-            # The player died, so let's show "Game Over! Retry this level."
-            over_text = self.font.render(
-                f"Game Over! Press any key or Y button to retry level {self.current_level_index + 1}",
-                True, c.RED
-            )
-            over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
-            self.screen.blit(over_text, over_rect)
-            pygame.display.update()
-            
-            waiting = True
-            while waiting:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        exit()
-                    if event.type == pygame.KEYDOWN:
-                        waiting = False
-                    if event.type == pygame.JOYBUTTONDOWN:
-                        if event.button == 3:
-                            waiting = False
+            self.show_game_over_screen()
 
-            # We do NOT reset c.CURRENT_LEVEL to 0 => we keep same level
-            main()  # re-run the same level
-
-    def show_final_message(self, msg: str) -> None:
-        over_text = self.font.render(msg, True, c.RED)
-        over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
-        self.screen.blit(over_text, over_rect)
-        pygame.display.update()
-
-        waiting = True
-        while waiting:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                if event.type == pygame.KEYDOWN:
-                    waiting = False
-                if event.type == pygame.JOYBUTTONDOWN:
-                    if event.button == 3:
-                        waiting = False
+    # ------------------------------------------------------------------
+    # DRAW EVERYTHING
+    # ------------------------------------------------------------------
 
     def draw_game(self, remaining_time: float) -> None:
         """
-        Draws the player, spikes, platforms, obstacles, coins, and UI text.
-        Also draws the level counter at the top.
+        Draws the player, spikes, platforms, obstacles, coins, 
+        and some on-screen text (timer, coin count, etc.).
         """
+        # Player & spikes
         self.player.draw(self.screen)
         self.spikes.draw(self.screen)
         
+        # Platforms, obstacles, coins
         for platform in self.level_manager.platforms:
             platform.draw(self.screen)
         for obs in self.level_manager.obstacles:
@@ -351,7 +295,84 @@ class Game:
         level_rect = level_text.get_rect(center=(c.WIDTH // 2, 20))
         self.screen.blit(level_text, level_rect)
 
+    # ------------------------------------------------------------------
+    # SCREENS
+    # ------------------------------------------------------------------
+
+    def show_completion_screen(self) -> None:
+        over_text = self.font.render(
+            f"Level {self.current_level_index + 1} Complete! Press any key or Y to continue.",
+            True, c.RED
+        )
+        over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
+        self.screen.blit(over_text, over_rect)
+        pygame.display.update()
+
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    waiting = False
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == 3:  # 'Y' button
+                        waiting = False
+
+        # If more levels remain, move to next level
+        if self.current_level_index < len(c.LEVELS) - 1:
+            c.CURRENT_LEVEL += 1
+            main()  # re-run with next level
+        else:
+            self.show_final_message("All levels completed! Thanks for playing.")
+
+    def show_game_over_screen(self) -> None:
+        over_text = self.font.render(
+            f"Game Over! Press any key or Y button to retry level {self.current_level_index + 1}",
+            True, c.RED
+        )
+        over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
+        self.screen.blit(over_text, over_rect)
+        pygame.display.update()
+        
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    waiting = False
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == 3:  # 'Y' button
+                        waiting = False
+
+        # Retry the same level
+        main()
+
+    def show_final_message(self, msg: str) -> None:
+        over_text = self.font.render(msg, True, c.RED)
+        over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
+        self.screen.blit(over_text, over_rect)
+        pygame.display.update()
+
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    waiting = False
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == 3:
+                        waiting = False
+
 def main() -> None:
+    """
+    Start a new game loop repeatedly.
+    """
     while True:
         game = Game()
         game.run()

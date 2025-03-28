@@ -4,7 +4,6 @@ import src.config as c
 
 class Player:
     def __init__(self):
-        # Let's treat it as a square: side = int(SQUARE_WIDTH_FRAC * c.WIDTH)
         side = int(c.SQUARE_WIDTH_FRAC * c.WIDTH)
         self.width = side
         self.height = side
@@ -29,8 +28,7 @@ class Player:
         for platform in platforms:
             platform_rect = pygame.Rect(platform.x, platform.y,
                                         platform.width, platform.height)
-            
-            # Inflate horizontally by PLATFORM_EDGE_TOLERANCE on each side
+            # Inflating horizontally by PLATFORM_EDGE_TOLERANCE:
             platform_rect.x -= c.PLATFORM_EDGE_TOLERANCE
             platform_rect.width += 2 * c.PLATFORM_EDGE_TOLERANCE
 
@@ -39,8 +37,6 @@ class Player:
                 self.vel_y = 0
                 self.on_ground = True
                 self.can_double_jump = True
-
-                # Update the player_rect's y so subsequent checks use the corrected position
                 player_rect.y = self.y
 
     def draw(self, screen):
