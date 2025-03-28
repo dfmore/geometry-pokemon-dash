@@ -35,7 +35,7 @@ COYOTE_FRAMES = 5
 JUMP_BUFFER_FRAMES = 5
 
 SPEED = 6
-LEVEL_DURATION = 50  # seconds
+LEVEL_DURATION = 40  # seconds
 
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
@@ -63,7 +63,7 @@ LEVELS = [
 
         "obstacle_spawn_chance": 0.5,
         "obstacle_max_per_platform": 1,    # For easy
-        "coin_chance": 0.2,  # optional
+        "coin_chance": 0.4,  # optional
     },
     {
         "name": "Level 2",
@@ -72,12 +72,54 @@ LEVELS = [
         "safe_gap_max": 140,
         "vertical_offset_min": -45,
         "vertical_offset_max": 45,
-        "min_platform_y": 300,
-        "max_platform_y": 700,
+        "min_platform_y": 400,
+        "max_platform_y": 800,
 
         "obstacle_spawn_chance": 0.4,
         "obstacle_max_per_platform": 2,    # Harder
         "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 3",
+        "seed": 304,
+        "safe_gap_min": 60,
+        "safe_gap_max": 150,
+        "vertical_offset_min": -75,
+        "vertical_offset_max": 75,
+        "min_platform_y": 450,
+        "max_platform_y": 800,
+
+        "obstacle_spawn_chance": 0.4,
+        "obstacle_max_per_platform": 2,    # Harder
+        "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 4",
+        "seed": 404,
+        "safe_gap_min": 50,
+        "safe_gap_max": 170,
+        "vertical_offset_min": -95,
+        "vertical_offset_max": 95,
+        "min_platform_y": 250,
+        "max_platform_y": 900,
+
+        "obstacle_spawn_chance": 0.5,
+        "obstacle_max_per_platform": 1,    # Harder
+        "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 5",
+        "seed": 507,
+        "safe_gap_min": 70,
+        "safe_gap_max": 180,
+        "vertical_offset_min": -135,
+        "vertical_offset_max": 135,
+        "min_platform_y": 200,
+        "max_platform_y": 1100,
+
+        "obstacle_spawn_chance": 0.7,
+        "obstacle_max_per_platform": 2,    # Harder
+        "coin_chance": 0.3,
     }
 ]
 
