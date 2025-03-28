@@ -103,7 +103,7 @@ LEVELS = [
     },
     {
         "name": "Level 5",
-        "seed": 507,
+        "seed": 508,
         "safe_gap_min": 70,
         "safe_gap_max": 180,
         "vertical_offset_min": -135,
@@ -118,3 +118,7 @@ LEVELS = [
 
 # Which level to load
 CURRENT_LEVEL = 0
+
+JOYSTICK_NUDGE_RANGE = 50   # How far (in pixels) we can nudge left/right
+JOYSTICK_NUDGE_DEADZONE = 0.1
+JOYSTICK_NUDGE_SPEED = 0.15  # 0.0 -> never moves, 1.0 -> instant snap

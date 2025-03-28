@@ -158,20 +158,37 @@ class Game:
                     self.handle_charged_jump_release()
 
     def update_input(self) -> None:
-        """Check continuous inputs each frame (holding space to charge jump)."""
+        """Check continuous inputs each frame (holding space to charge jump, etc.)."""
         keys = pygame.key.get_pressed()
 
-        # If space is held and we're charging on ground, keep increasing jump_charge
+        # Charged jump logic (already in your code)
         if keys[pygame.K_SPACE] and self.player.charging and self.player.on_ground:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
 
-        # If the joystick button is held and we're charging on ground
         if joystick is not None and joystick.get_button(0) and self.player.charging and self.player.on_ground:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
+
+        # ----------------------------------------------------------------
+        # Nudge the player's X using the left stick
+        # ----------------------------------------------------------------
+        if joystick is not None:
+            horizontal_input = joystick.get_axis(0)  # left stick X axis => -1.0 to +1.0
+            if abs(horizontal_input) < c.JOYSTICK_NUDGE_DEADZONE:
+                horizontal_input = 0
+
+            # Calculate target X offset from default_x
+            target_x = self.player.default_x + horizontal_input * c.JOYSTICK_NUDGE_RANGE
+        else:
+            # No joystick => no offset
+            target_x = self.player.default_x
+
+        # Smoothly move the player's x toward target_x each frame
+        # newX = oldX + SPEED * (targetX - oldX)
+        self.player.x += c.JOYSTICK_NUDGE_SPEED * (target_x - self.player.x)
 
     # ------------------------------------------------------------------
     # UPDATE OBJECTS

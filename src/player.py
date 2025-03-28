@@ -11,6 +11,8 @@ class Player:
         # Starting position
         self.x = 100
         self.y = 320
+        # Keep track of the resting/default X for nudging logic
+        self.default_x = self.x
 
         self.vel_y = 0
         self.on_ground = True
@@ -28,7 +30,7 @@ class Player:
         for platform in platforms:
             platform_rect = pygame.Rect(platform.x, platform.y,
                                         platform.width, platform.height)
-            # Inflating horizontally by PLATFORM_EDGE_TOLERANCE:
+            # Slight horizontal tolerance
             platform_rect.x -= c.PLATFORM_EDGE_TOLERANCE
             platform_rect.width += 2 * c.PLATFORM_EDGE_TOLERANCE
 
