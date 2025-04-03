@@ -18,6 +18,12 @@ else:
     joystick = None
 
 class Game:
+    # ------------------------------------------------------------------
+    # We store the shared lives count here so it doesn't reset each time
+    # the game calls main() and creates a new Game() instance.
+    # ------------------------------------------------------------------
+    persistent_lives = 10
+
     def __init__(self) -> None:
         # Load assets (images, sounds, etc.)
         self.assets = load_assets()
@@ -52,6 +58,10 @@ class Game:
         self.start_ticks = pygame.time.get_ticks()
         self.coins_collected = 0
         self.level_complete = False
+
+        # Instead of always setting "self.lives = 10",
+        # read from our class variable persistent_lives
+        self.lives = Game.persistent_lives
 
     # ------------------------------------------------------------------
     # COYOTE TIME & JUMP BUFFER HELPERS
@@ -94,17 +104,14 @@ class Game:
     # ------------------------------------------------------------------
 
     def handle_charged_jump_press(self) -> None:
-        # If we still have "coyote" ground frames left, begin charging
         if self.coyote_ground_frames_for('charged') > 0:
             self.player.charging = True
             self.player.jump_charge = c.MIN_JUMP_STRENGTH
             self.set_jump_buffer_frames('charged', 0)
         else:
-            # If no ground frames left, store the jump input for a few frames
             self.set_jump_buffer_frames('charged', c.JUMP_BUFFER_FRAMES)
 
     def handle_charged_jump_release(self) -> None:
-        # If we were charging, finalize the jump
         if self.player.charging:
             if self.player.on_ground:
                 self.player.vel_y = -self.player.jump_charge
@@ -113,13 +120,11 @@ class Game:
             self.player.jump_charge = 0
 
     def handle_instant_jump(self) -> None:
-        # "Instant" jump is triggered right away if on ground or within coyote frames
         if self.coyote_ground_frames_for('instant') > 0:
             self.player.vel_y = -c.MIN_JUMP_STRENGTH
             self.boing_sound.play()
             self.set_jump_buffer_frames('instant', 0)
         else:
-            # If in mid-air and we have a double jump available, use it
             if not self.player.on_ground and self.player.can_double_jump:
                 self.player.vel_y = -c.MIN_JUMP_STRENGTH
                 self.player.can_double_jump = False
@@ -185,7 +190,7 @@ class Game:
         else:
             target_x = self.player.default_x
 
-        # Smoothly move the player's x toward target_x each frame:
+        # Smoothly move the player's x toward target_x
         self.player.x += c.JOYSTICK_NUDGE_SPEED * (target_x - self.player.x)
 
     # ------------------------------------------------------------------
@@ -193,14 +198,9 @@ class Game:
     # ------------------------------------------------------------------
 
     def update_bubbles(self):
-        """
-        Possibly spawn new bubbles if under BUBBLE_MAX_COUNT
-        and remove any that float off the top.
-        """
         if len(self.bubbles) < c.BUBBLE_MAX_COUNT:
             if random.random() < c.BUBBLE_SPAWN_RATE:
                 spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
-                # near the bottom, just above spikes:
                 y_position = random.randint(c.HEIGHT - spike_height - 10,
                                             c.HEIGHT - spike_height + 10)
                 x_position = random.randint(0, c.WIDTH)
@@ -238,10 +238,10 @@ class Game:
         self.level_complete = False
 
         while running:
-            # 1) Fill background light blue
+            # 1) Fill background
             self.screen.fill(c.LIGHT_BLUE)
 
-            # 2) Update & draw bubbles behind everything
+            # 2) Bubbles behind everything
             self.update_bubbles()
             self.draw_bubbles()
 
@@ -256,7 +256,7 @@ class Game:
             # Move player
             self.player.move(self.level_manager.platforms)
 
-            # Handle coyote + jump buffer
+            # Coyote + Jump Buffer
             if self.player.on_ground:
                 self.set_coyote_ground_frames('charged', c.COYOTE_FRAMES)
                 if self.jump_buffer_frames_for('charged') > 0:
@@ -280,15 +280,15 @@ class Game:
                     self.coins_collected += 1
                     self.coin_sound.play()
             
-            # Draw the main game elements
+            # Draw
             self.draw_game(remaining_time)
 
-            # Check collisions
+            # Check collisions => the player died
             if self.level_manager.check_obstacle_collisions(player_rect):
                 running = False  
                 self.level_complete = False
 
-            # Spikes => game over if player touches them
+            # Spikes => died
             spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
             if (self.player.y + self.player.height) >= (c.HEIGHT - spike_height):
                 running = False
@@ -302,11 +302,21 @@ class Game:
             pygame.display.update()
             self.clock.tick(30)
 
-        # End-of-loop => either died or time ran out
+        # After the loop, either died or time ran out
         if self.level_complete:
             self.show_completion_screen()
         else:
-            self.show_game_over_screen()
+            # The player died => lose 1 life
+            self.lives -= 1
+            # Save new lives count to class variable
+            Game.persistent_lives = self.lives
+
+            if self.lives <= 0:
+                # Out of lives => show final screen, reset to level 1
+                self.show_out_of_lives_screen()
+            else:
+                # Normal game over => can retry same level
+                self.show_game_over_screen()
 
     # ------------------------------------------------------------------
     # DRAW MAIN GAME OBJECTS
@@ -314,31 +324,28 @@ class Game:
 
     def draw_game(self, remaining_time: float) -> None:
         """
-        Draws:
-         - A black rectangle behind the spikes,
-         - The player, spikes, platforms, obstacles, coins,
-         - UI: timer, coin count, level,
-         - Power-up bar in bottom-right indicating charged jump.
+        Black bar behind spikes,
+        Player, spikes, obstacles, coins,
+        Timer, coin count, level, lives, jump charge bar
         """
-        # 1) Black rectangle behind spikes
+        # Black bar behind spikes
         spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
         black_bar_top = c.HEIGHT - spike_height - c.SPIKE_BG_OVERLAP
         black_bar_height = spike_height + c.SPIKE_BG_OVERLAP
         if black_bar_top < 0:
             black_bar_top = 0
             black_bar_height = c.HEIGHT
-
         pygame.draw.rect(
             self.screen,
             c.SPIKE_BG_COLOR,
             (0, black_bar_top, c.WIDTH, black_bar_height)
         )
 
-        # 2) Player & spikes
+        # Player & spikes
         self.player.draw(self.screen)
         self.spikes.draw(self.screen)
 
-        # 3) Platforms, obstacles, coins
+        # Platforms/obstacles/coins
         for platform in self.level_manager.platforms:
             platform.draw(self.screen)
         for obs in self.level_manager.obstacles:
@@ -346,55 +353,48 @@ class Game:
         for coin in self.level_manager.star_coins:
             coin.draw(self.screen)
 
-        # 4) UI: Timer, Coins, Level
+        # Timer
         timer_text = self.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
         self.screen.blit(timer_text, (10, 10))
 
+        # Coin count (top-right)
         coin_text = self.font.render(f"Coins: {self.coins_collected}", True, c.BLACK)
         coin_rect_disp = coin_text.get_rect(topright=(c.WIDTH - 10, 10))
         self.screen.blit(coin_text, coin_rect_disp)
 
+        # Level
         level_text = self.font.render(
             f"Level: {self.current_level_index + 1} / {len(c.LEVELS)}", True, c.BLACK
         )
         level_rect = level_text.get_rect(center=(c.WIDTH // 2, 20))
         self.screen.blit(level_text, level_rect)
 
-        # 5) Power-up bar (bottom-right)
+        # Lives (below the timer)
+        lives_text = self.font.render(f"Lives: {self.lives}", True, c.BLACK)
+        self.screen.blit(lives_text, (10, 50))
+
+        # Charge bar
         self.draw_powerup_bar()
 
     def draw_powerup_bar(self):
-        """
-        Draw a red bar representing the player's jump_charge,
-        up to c.MAX_JUMP_STRENGTH, taking about 1/6 of screen height at max.
-        """
-        # bar up to 1/6 of the screen height
         bar_max_height = c.HEIGHT / 6
         bar_width = 30
 
-        # fraction of how charged
         fraction = self.player.jump_charge / c.MAX_JUMP_STRENGTH
-        if fraction < 0:
-            fraction = 0
-        if fraction > 1:
-            fraction = 1
+        fraction = max(0, min(fraction, 1))
 
         fill_height = bar_max_height * fraction
-
-        # anchor the bar in the bottom-right corner
         bar_x = c.WIDTH - bar_width - 10
         bar_y = c.HEIGHT - 10 - bar_max_height
 
-        # draw the outline in black (width=2 for a visible border)
+        # outline in black
         pygame.draw.rect(
             self.screen,
             (0, 0, 0),
             (bar_x, bar_y, bar_width, bar_max_height),
             2
         )
-
-        # draw the filled portion in red
-        # (starts at bottom of the bar going upward)
+        # fill in red
         fill_rect = (
             bar_x,
             bar_y + (bar_max_height - fill_height),
@@ -404,7 +404,7 @@ class Game:
         pygame.draw.rect(self.screen, (255, 0, 0), fill_rect)
 
     # ------------------------------------------------------------------
-    # SCREENS
+    # COMPLETION / GAME OVER SCREENS
     # ------------------------------------------------------------------
 
     def show_completion_screen(self) -> None:
@@ -428,6 +428,7 @@ class Game:
                     if event.button == 3:  # 'Y' button
                         waiting = False
 
+        # Next level or final completion
         if self.current_level_index < len(c.LEVELS) - 1:
             c.CURRENT_LEVEL += 1
             main()
@@ -452,9 +453,39 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     waiting = False
                 if event.type == pygame.JOYBUTTONDOWN:
-                    if event.button == 3:  # 'Y' button
+                    if event.button == 3:
                         waiting = False
 
+        main()  # re-runs the same level (with decreased lives)
+
+    def show_out_of_lives_screen(self) -> None:
+        """
+        Player has run out of lives => reset to level 1, restore lives to 10.
+        """
+        over_text = self.font.render(
+            "No more lives! Press any key or Y to restart from Level 1.",
+            True, c.RED
+        )
+        over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
+        self.screen.blit(over_text, over_rect)
+        pygame.display.update()
+
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    waiting = False
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == 3:
+                        waiting = False
+
+        # Reset to level 1
+        c.CURRENT_LEVEL = 0
+        # Reset persistent lives
+        Game.persistent_lives = 10
         main()
 
     def show_final_message(self, msg: str) -> None:
@@ -476,7 +507,10 @@ class Game:
                         waiting = False
 
 def main() -> None:
-    """Start a new game loop repeatedly."""
+    """
+    Loops forever, but each iteration we create a new Game() instance,
+    which reads the current persistent_lives from the class variable.
+    """
     while True:
         game = Game()
         game.run()

@@ -73,7 +73,7 @@ LEVELS = [
         "min_platform_y": 400,
         "max_platform_y": 800,
         "obstacle_spawn_chance": 0.4,
-        "obstacle_max_per_platform": 2,
+        "obstacle_max_per_platform": 1,
         "coin_chance": 0.4,
     },
     {
