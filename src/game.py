@@ -39,7 +39,7 @@ class Game:
         self.player = Player()
         self.spikes = Spikes()
 
-        # Bubble storage
+        # Bubble storage (background effect)
         self.bubbles = []
 
         # Timers for coyote time + jump buffer (two types of jumps)
@@ -125,7 +125,6 @@ class Game:
                 self.player.can_double_jump = False
                 self.boing_sound.play()
             else:
-                # else store the jump input (jump buffer)
                 self.set_jump_buffer_frames('instant', c.JUMP_BUFFER_FRAMES)
 
     # ------------------------------------------------------------------
@@ -177,18 +176,13 @@ class Game:
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
 
-        # ----------------------------------------------------------------
         # Nudge the player's X using the left stick
-        # ----------------------------------------------------------------
         if joystick is not None:
-            horizontal_input = joystick.get_axis(0)  # left stick X axis => -1.0 to +1.0
+            horizontal_input = joystick.get_axis(0)
             if abs(horizontal_input) < c.JOYSTICK_NUDGE_DEADZONE:
                 horizontal_input = 0
-
-            # Calculate target X offset from default_x
             target_x = self.player.default_x + horizontal_input * c.JOYSTICK_NUDGE_RANGE
         else:
-            # No joystick => no offset
             target_x = self.player.default_x
 
         # Smoothly move the player's x toward target_x each frame:
@@ -200,29 +194,25 @@ class Game:
 
     def update_bubbles(self):
         """
-        - Possibly spawn new bubbles if under BUBBLE_MAX_COUNT
-        - Each frame, there's a c.BUBBLE_SPAWN_RATE chance to spawn
-        - Remove bubbles that go off screen
+        Possibly spawn new bubbles if under BUBBLE_MAX_COUNT
+        and remove any that float off the top.
         """
-        # 1) Spawn new bubble if possible
         if len(self.bubbles) < c.BUBBLE_MAX_COUNT:
             if random.random() < c.BUBBLE_SPAWN_RATE:
-                # We'll spawn them near the bottom, just above spikes
                 spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
+                # near the bottom, just above spikes:
                 y_position = random.randint(c.HEIGHT - spike_height - 10,
                                             c.HEIGHT - spike_height + 10)
                 x_position = random.randint(0, c.WIDTH)
                 new_bubble = Bubble(x_position, y_position)
                 self.bubbles.append(new_bubble)
 
-        # 2) Update existing bubbles
         for bubble in self.bubbles[:]:
             bubble.update()
             if bubble.off_screen():
                 self.bubbles.remove(bubble)
 
     def draw_bubbles(self):
-        """Draw all bubbles behind the main game objects."""
         for bubble in self.bubbles:
             bubble.draw(self.screen)
 
@@ -290,7 +280,7 @@ class Game:
                     self.coins_collected += 1
                     self.coin_sound.play()
             
-            # Draw the main game elements (player, spikes, platforms, etc.)
+            # Draw the main game elements
             self.draw_game(remaining_time)
 
             # Check collisions
@@ -324,59 +314,31 @@ class Game:
 
     def draw_game(self, remaining_time: float) -> None:
         """
-        Draws the player, spikes, platforms, obstacles, coins, 
-        and some on-screen text (timer, coin count, etc.).
+        Draws:
+         - A black rectangle behind the spikes,
+         - The player, spikes, platforms, obstacles, coins,
+         - UI: timer, coin count, level,
+         - Power-up bar in bottom-right indicating charged jump.
         """
-        # Player & spikes
-        self.player.draw(self.screen)
-        self.spikes.draw(self.screen)
-        
-        # Platforms, obstacles, coins
-        for platform in self.level_manager.platforms:
-            platform.draw(self.screen)
-        for obs in self.level_manager.obstacles:
-            obs.draw(self.screen)
-        for coin in self.level_manager.star_coins:
-            coin.draw(self.screen)
-
-        # Timer
-        timer_text = self.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
-        self.screen.blit(timer_text, (10, 10))
-
-        # Coin count
-        coin_text = self.font.render(f"Coins: {self.coins_collected}", True, c.BLACK)
-        coin_rect_disp = coin_text.get_rect(topright=(c.WIDTH - 10, 10))
-        self.screen.blit(coin_text, coin_rect_disp)
-
-        # Level counter
-        level_text = self.font.render(
-            f"Level: {self.current_level_index + 1} / {len(c.LEVELS)}", True, c.BLACK
-        )
-        level_rect = level_text.get_rect(center=(c.WIDTH // 2, 20))
-        self.screen.blit(level_text, level_rect)
-        
         # 1) Black rectangle behind spikes
         spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
-        # The top of our black bar is (HEIGHT - spike_height - overlap)
         black_bar_top = c.HEIGHT - spike_height - c.SPIKE_BG_OVERLAP
         black_bar_height = spike_height + c.SPIKE_BG_OVERLAP
-
-        # Make sure we don't go negative if overlap is large
         if black_bar_top < 0:
             black_bar_top = 0
             black_bar_height = c.HEIGHT
 
-        # Draw black rectangle across the full screen width
         pygame.draw.rect(
             self.screen,
             c.SPIKE_BG_COLOR,
             (0, black_bar_top, c.WIDTH, black_bar_height)
         )
 
-        # 2) Draw the player, spikes, platforms, etc. on top
+        # 2) Player & spikes
         self.player.draw(self.screen)
         self.spikes.draw(self.screen)
 
+        # 3) Platforms, obstacles, coins
         for platform in self.level_manager.platforms:
             platform.draw(self.screen)
         for obs in self.level_manager.obstacles:
@@ -384,7 +346,7 @@ class Game:
         for coin in self.level_manager.star_coins:
             coin.draw(self.screen)
 
-        # 3) UI text (timer, coin count, etc.)
+        # 4) UI: Timer, Coins, Level
         timer_text = self.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
         self.screen.blit(timer_text, (10, 10))
 
@@ -397,6 +359,49 @@ class Game:
         )
         level_rect = level_text.get_rect(center=(c.WIDTH // 2, 20))
         self.screen.blit(level_text, level_rect)
+
+        # 5) Power-up bar (bottom-right)
+        self.draw_powerup_bar()
+
+    def draw_powerup_bar(self):
+        """
+        Draw a red bar representing the player's jump_charge,
+        up to c.MAX_JUMP_STRENGTH, taking about 1/6 of screen height at max.
+        """
+        # bar up to 1/6 of the screen height
+        bar_max_height = c.HEIGHT / 6
+        bar_width = 30
+
+        # fraction of how charged
+        fraction = self.player.jump_charge / c.MAX_JUMP_STRENGTH
+        if fraction < 0:
+            fraction = 0
+        if fraction > 1:
+            fraction = 1
+
+        fill_height = bar_max_height * fraction
+
+        # anchor the bar in the bottom-right corner
+        bar_x = c.WIDTH - bar_width - 10
+        bar_y = c.HEIGHT - 10 - bar_max_height
+
+        # draw the outline in black (width=2 for a visible border)
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 0),
+            (bar_x, bar_y, bar_width, bar_max_height),
+            2
+        )
+
+        # draw the filled portion in red
+        # (starts at bottom of the bar going upward)
+        fill_rect = (
+            bar_x,
+            bar_y + (bar_max_height - fill_height),
+            bar_width,
+            fill_height
+        )
+        pygame.draw.rect(self.screen, (255, 0, 0), fill_rect)
 
     # ------------------------------------------------------------------
     # SCREENS
@@ -423,10 +428,9 @@ class Game:
                     if event.button == 3:  # 'Y' button
                         waiting = False
 
-        # If more levels remain, move to next level
         if self.current_level_index < len(c.LEVELS) - 1:
             c.CURRENT_LEVEL += 1
-            main()  # re-run with next level
+            main()
         else:
             self.show_final_message("All levels completed! Thanks for playing.")
 
@@ -451,7 +455,6 @@ class Game:
                     if event.button == 3:  # 'Y' button
                         waiting = False
 
-        # Retry the same level
         main()
 
     def show_final_message(self, msg: str) -> None:
@@ -473,9 +476,7 @@ class Game:
                         waiting = False
 
 def main() -> None:
-    """
-    Start a new game loop repeatedly.
-    """
+    """Start a new game loop repeatedly."""
     while True:
         game = Game()
         game.run()
