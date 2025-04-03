@@ -15,7 +15,7 @@ else:
 # Store the final window size so other code sees it
 c.WIDTH, c.HEIGHT = screen.get_size()
 
-from src.game import main
+from src.game_manager import main
 
 if __name__ == "__main__":
     main()
