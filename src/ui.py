@@ -2,6 +2,7 @@
 
 import pygame
 import src.config as c
+import src.levels_config as lvl
 
 def draw_black_bar_behind_spikes(game):
     spike_height = int(c.SPIKE_HEIGHT_FRAC * c.HEIGHT)
@@ -51,7 +52,7 @@ def draw_hud_text(game, remaining_time):
 
     # Level
     level_text = game.font.render(
-        f"Level: {game.current_level_index + 1} / {len(c.LEVELS)}", True, c.BLACK
+        f"Level: {game.current_level_index + 1} / {len(lvl.LEVELS)}", True, c.BLACK
     )
     level_rect = level_text.get_rect(center=(c.WIDTH // 2, 20))
     game.screen.blit(level_text, level_rect)

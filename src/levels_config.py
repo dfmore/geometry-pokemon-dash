@@ -1,0 +1,72 @@
+# levels_config.py
+
+# Optionally keep the "which level to load" here or define it in config.py
+CURRENT_LEVEL = 0
+
+LEVELS = [
+    {
+        "name": "Level 1 (Easy)",
+        "seed": 101,
+        "safe_gap_min": 50,
+        "safe_gap_max": 140,
+        "vertical_offset_min": -30,
+        "vertical_offset_max": 30,
+        "min_platform_y": 450,
+        "max_platform_y": 650,
+        "obstacle_spawn_chance": 0.5,
+        "obstacle_max_per_platform": 1,
+        "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 2",
+        "seed": 203,
+        "safe_gap_min": 50,
+        "safe_gap_max": 140,
+        "vertical_offset_min": -45,
+        "vertical_offset_max": 45,
+        "min_platform_y": 400,
+        "max_platform_y": 800,
+        "obstacle_spawn_chance": 0.4,
+        "obstacle_max_per_platform": 2,
+        "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 3",
+        "seed": 304,
+        "safe_gap_min": 60,
+        "safe_gap_max": 150,
+        "vertical_offset_min": -75,
+        "vertical_offset_max": 75,
+        "min_platform_y": 450,
+        "max_platform_y": 800,
+        "obstacle_spawn_chance": 0.4,
+        "obstacle_max_per_platform": 2,
+        "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 4",
+        "seed": 404,
+        "safe_gap_min": 50,
+        "safe_gap_max": 170,
+        "vertical_offset_min": -95,
+        "vertical_offset_max": 95,
+        "min_platform_y": 250,
+        "max_platform_y": 900,
+        "obstacle_spawn_chance": 0.5,
+        "obstacle_max_per_platform": 1,
+        "coin_chance": 0.4,
+    },
+    {
+        "name": "Level 5",
+        "seed": 507,
+        "safe_gap_min": 70,
+        "safe_gap_max": 180,
+        "vertical_offset_min": -135,
+        "vertical_offset_max": 135,
+        "min_platform_y": 200,
+        "max_platform_y": 1100,
+        "obstacle_spawn_chance": 0.7,
+        "obstacle_max_per_platform": 2,
+        "coin_chance": 0.3,
+    }
+]

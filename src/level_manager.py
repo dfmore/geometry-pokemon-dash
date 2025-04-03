@@ -1,7 +1,11 @@
 # level_manager.py
+
 import pygame
 import random
+
 import src.config as c
+import src.levels_config as lvl
+
 from src.game_platform import Platform
 from src.obstacle import Obstacle
 from src.coin import StarCoin
@@ -16,8 +20,10 @@ class LevelManager:
         self.star_coins = []
 
         self.coins_spawned = 0
-        self.level_index = c.CURRENT_LEVEL
+        # Use the CURRENT_LEVEL from levels_config
+        self.level_index = lvl.CURRENT_LEVEL
 
+        # Generate the level data
         self.generate_seeded_level(self.level_index)
 
     def generate_seeded_level(self, level_index):
@@ -29,11 +35,12 @@ class LevelManager:
         self.star_coins.clear()
         self.coins_spawned = 0
 
-        if level_index < 0 or level_index >= len(c.LEVELS):
+        # Validate index
+        if level_index < 0 or level_index >= len(lvl.LEVELS):
             print(f"Warning: level_index {level_index} out of range. Defaulting to 0.")
             level_index = 0
 
-        level_data = c.LEVELS[level_index]
+        level_data = lvl.LEVELS[level_index]
         print(f"Generating level: {level_data.get('name', 'Unknown')}")
 
         # 1) Seed
@@ -81,7 +88,7 @@ class LevelManager:
                     obs.y = p.y - obs.height
                     self.obstacles.append(obs)
 
-            # Maybe spawn a coin
+            # Maybe spawn coin
             if random.random() < coin_chance:
                 c_obj = StarCoin(0, 0, self.coin_image)
                 attempts = 5
@@ -92,8 +99,10 @@ class LevelManager:
                     coin_rect = pygame.Rect(coin_x, coin_y, c_obj.width, c_obj.height)
 
                     overlap = False
+                    # Check obstacles on the same platform to avoid overlap
                     for obs in self.obstacles:
-                        if obs.x >= p.x and obs.x <= (p.x + p.width):
+                        if (obs.x >= p.x and
+                            obs.x <= (p.x + p.width)):
                             obs_rect = pygame.Rect(obs.x, obs.y, obs.width, obs.height)
                             if coin_rect.colliderect(obs_rect):
                                 overlap = True
@@ -108,28 +117,33 @@ class LevelManager:
                     attempts -= 1
 
     def update_platforms(self):
+        """Move each platform left and remove if off-screen."""
         for p in self.platforms[:]:
             p.move()
             if p.off_screen():
                 self.platforms.remove(p)
 
     def update_obstacles(self):
+        """Move each obstacle left and remove if off-screen."""
         for obs in self.obstacles[:]:
             obs.move()
             if obs.off_screen():
                 self.obstacles.remove(obs)
 
     def update_coins(self):
+        """Move each coin left and remove if off-screen."""
         for ccoin in self.star_coins[:]:
             ccoin.x -= c.SPEED
             if (ccoin.x + ccoin.width) < 0:
                 self.star_coins.remove(ccoin)
 
     def check_obstacle_collisions(self, player_rect):
+        """
+        Returns True if the player rect intersects any obstacle (with some collision tolerance).
+        """
         for obstacle in self.obstacles:
-            obs_rect = pygame.Rect(obstacle.x, obstacle.y,
-                                   obstacle.width, obstacle.height)
-            if player_rect.colliderect(obs_rect.inflate(-c.COLLISION_TOLERANCE*2,
-                                                        -c.COLLISION_TOLERANCE*2)):
+            obs_rect = pygame.Rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
+            inflated = obs_rect.inflate(-c.COLLISION_TOLERANCE*2, -c.COLLISION_TOLERANCE*2)
+            if player_rect.colliderect(inflated):
                 return True
         return False
