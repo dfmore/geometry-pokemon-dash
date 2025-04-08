@@ -30,13 +30,9 @@ def draw_powerup_bar(game):
     bar_y = c.HEIGHT - 10 - bar_max_height
 
     # Outline
-    pygame.draw.rect(
-        game.screen,
-        (0, 0, 0),
-        (bar_x, bar_y, bar_width, bar_max_height),
-        2
-    )
-    # Filled portion
+    pygame.draw.rect(game.screen, (0, 0, 0),
+                     (bar_x, bar_y, bar_width, bar_max_height), 2)
+    # Fill
     fill_rect = (bar_x, bar_y + (bar_max_height - fill_height), bar_width, fill_height)
     pygame.draw.rect(game.screen, (255, 0, 0), fill_rect)
 
@@ -45,14 +41,17 @@ def draw_hud_text(game, remaining_time):
     timer_text = game.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
     game.screen.blit(timer_text, (10, 10))
 
-    # Coins
-    coin_text = game.font.render(f"Coins: {game.coins_collected}", True, c.BLACK)
+    # Combine baseline + current level coins for display
+    total_coins = game.baseline_coins + game.current_level_coins
+
+    coin_text = game.font.render(f"Coins: {total_coins}", True, c.BLACK)
     coin_rect_disp = coin_text.get_rect(topright=(c.WIDTH - 10, 10))
     game.screen.blit(coin_text, coin_rect_disp)
 
-    # Level
+    # Show level out of total
     level_text = game.font.render(
-        f"Level: {game.current_level_index + 1} / {len(lvl.LEVELS)}", True, c.BLACK
+        f"Level: {game.current_level_index + 1} / {len(lvl.LEVELS)}",
+        True, c.BLACK
     )
     level_rect = level_text.get_rect(center=(c.WIDTH // 2, 20))
     game.screen.blit(level_text, level_rect)
