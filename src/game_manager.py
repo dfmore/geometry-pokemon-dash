@@ -12,7 +12,7 @@ from src.spikes import Spikes
 from src.level_manager import LevelManager
 from src.bubbles import Bubble
 
-# UI + screens
+# We'll assume your UI and Screens code is in other files
 from src.ui import (
     draw_black_bar_behind_spikes,
     draw_powerup_bar,
@@ -24,6 +24,7 @@ from src.screens import (
     show_out_of_lives_screen
 )
 
+# Check for joystick
 if pygame.joystick.get_count() > 0:
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
@@ -31,7 +32,13 @@ else:
     joystick = None
 
 class Game:
-    persistent_lives = 10  # shared among restarts
+    # -----------------------------------------------------------------
+    # Shared "Persistent" Class Variables
+    # -----------------------------------------------------------------
+    # These variables carry over across new calls to main() so you don't lose
+    # your baseline_coins or lives each time you restart the game loop.
+    persistent_baseline_coins = 0  # locked in from completed levels
+    persistent_lives = 10         # total lives left
 
     def __init__(self) -> None:
         # Load assets
@@ -41,7 +48,7 @@ class Game:
         self.boing_sound = self.assets['boing_sound']
         self.coin_sound = self.assets['coin_sound']
         
-        # Rendering & font
+        # Rendering
         self.screen = pygame.display.get_surface()
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
@@ -50,30 +57,34 @@ class Game:
         self.level_manager = LevelManager(self.pokemon_images, self.coin_image)
         self.current_level_index = self.level_manager.level_index
 
-        # Player + spikes
+        # Player & spikes
         self.player = Player()
         self.spikes = Spikes()
 
         # Bubbles
         self.bubbles = []
 
-        # For coyote time + jump buffer
+        # Timers for coyote time & jump buffer
         self.coyote_frames_charged = 0
         self.jump_buffer_frames_charged = 0
         self.coyote_frames_instant = 0
         self.jump_buffer_frames_instant = 0
 
-        # Lives
+        # For each new Game instance, read the persistent variables
         self.lives = Game.persistent_lives
+        self.baseline_coins = Game.persistent_baseline_coins
 
-        # COINS: track "baseline" for completed levels + "current" for the attempt
-        self.baseline_coins = 0
+        # This is the partial coins for the level attempt
         self.current_level_coins = 0
+        self.final_coins_for_scoreboard = 0
 
-        # Timer
+        # Timers
         self.start_ticks = pygame.time.get_ticks()
         self.level_complete = False
 
+    # -----------------------------------------------------------------
+    # EVENT PROCESSING
+    # -----------------------------------------------------------------
     def process_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -103,6 +114,9 @@ class Game:
                 if event.button == 0:
                     self.handle_charged_jump_release()
 
+    # -----------------------------------------------------------------
+    # UPDATING INPUT
+    # -----------------------------------------------------------------
     def update_input(self) -> None:
         keys = pygame.key.get_pressed()
 
@@ -128,6 +142,9 @@ class Game:
 
         self.player.x += c.JOYSTICK_NUDGE_SPEED * (target_x - self.player.x)
 
+    # -----------------------------------------------------------------
+    # BUBBLES
+    # -----------------------------------------------------------------
     def update_bubbles(self):
         if len(self.bubbles) < c.BUBBLE_MAX_COUNT:
             if random.random() < c.BUBBLE_SPAWN_RATE:
@@ -147,19 +164,24 @@ class Game:
         for bubble in self.bubbles:
             bubble.draw(self.screen)
 
+    # -----------------------------------------------------------------
+    # UPDATE OBJECTS
+    # -----------------------------------------------------------------
     def update_objects(self) -> None:
         self.level_manager.update_platforms()
         self.level_manager.update_obstacles()
         self.level_manager.update_coins()
 
+    # -----------------------------------------------------------------
+    # MAIN RUN
+    # -----------------------------------------------------------------
     def run(self) -> None:
-        # Each run -> we start a "new attempt" of the level => current_level_coins = 0
+        """A single "game run". If the player completes the level or dies, we end and call screens."""
         self.current_level_coins = 0
-
-        running = True
         self.level_complete = False
         self.start_ticks = pygame.time.get_ticks()
 
+        running = True
         while running:
             self.screen.fill(c.LIGHT_BLUE)
             self.update_bubbles()
@@ -167,12 +189,12 @@ class Game:
 
             elapsed_time = (pygame.time.get_ticks() - self.start_ticks) / 1000.0
             remaining_time = max(0, c.LEVEL_DURATION - elapsed_time)
-            
+
             self.process_events()
             self.update_input()
             self.update_objects()
 
-            # Move player
+            # Move the player
             self.player.move(self.level_manager.platforms)
 
             # Coyote + Jump Buffer
@@ -191,8 +213,10 @@ class Game:
                 self.dec_coyote_ground_frames('instant')
 
             # Coin collection
-            player_rect = pygame.Rect(self.player.x, self.player.y,
-                                      self.player.width, self.player.height)
+            player_rect = pygame.Rect(
+                self.player.x, self.player.y,
+                self.player.width, self.player.height
+            )
             for coin in self.level_manager.star_coins[:]:
                 if player_rect.colliderect(coin.get_rect()):
                     self.level_manager.star_coins.remove(coin)
@@ -202,7 +226,7 @@ class Game:
             # Draw everything
             self.draw_game(remaining_time)
 
-            # Check collisions => death
+            # Collisions => death
             if self.level_manager.check_obstacle_collisions(player_rect):
                 running = False
                 self.level_complete = False
@@ -221,38 +245,38 @@ class Game:
             pygame.display.update()
             self.clock.tick(30)
 
-        # End of loop => either completed or died
+        # End of main loop => either we died or completed
         if self.level_complete:
-            # Add coins for finishing
+            # Lock in partial coins from this level
             self.baseline_coins += self.current_level_coins
+            # Save back to the persistent class variable
+            Game.persistent_baseline_coins = self.baseline_coins
+
             self.current_level_coins = 0
             show_completion_screen(self)
         else:
-            # Died => lose the coins from this attempt
-            self.current_level_coins = 0
+            # Died
             self.lives -= 1
             Game.persistent_lives = self.lives
+
             if self.lives <= 0:
+                # final attempt => scoreboard uses partial coins as well
+                self.final_coins_for_scoreboard = self.baseline_coins + self.current_level_coins
                 show_out_of_lives_screen(self)
             else:
+                # died with lives left => lose partial
+                self.current_level_coins = 0
                 show_game_over_screen(self)
 
-    # ------------------------------------------------------------------
-    # draw_game (REQUIRED)
-    # ------------------------------------------------------------------
+    # -----------------------------------------------------------------
+    # DRAW GAME
+    # -----------------------------------------------------------------
     def draw_game(self, remaining_time: float) -> None:
-        """
-        Draw the spikes background, player, obstacles, coins, 
-        plus the on-screen HUD: time, coins, level, lives, power-up bar.
-        """
-        # 1) Draw black bar behind spikes
+        """Draws black bar, player, spikes, platforms, coins, plus HUD and power-up bar."""
         draw_black_bar_behind_spikes(self)
-
-        # 2) Draw player & spikes
         self.player.draw(self.screen)
         self.spikes.draw(self.screen)
 
-        # 3) Draw platforms, obstacles, coins
         for platform in self.level_manager.platforms:
             platform.draw(self.screen)
         for obs in self.level_manager.obstacles:
@@ -260,15 +284,12 @@ class Game:
         for coin in self.level_manager.star_coins:
             coin.draw(self.screen)
 
-        # 4) HUD text (time, coins, level, lives)
         draw_hud_text(self, remaining_time)
-
-        # 5) Power-up bar
         draw_powerup_bar(self)
 
-    # ------------------------------------------------------------------
-    # Jump / Coyote Time Methods
-    # ------------------------------------------------------------------
+    # -----------------------------------------------------------------
+    # CHARGED + INSTANT JUMP
+    # -----------------------------------------------------------------
     def handle_charged_jump_press(self) -> None:
         if self.coyote_ground_frames_for('charged') > 0:
             self.player.charging = True
@@ -298,11 +319,13 @@ class Game:
             else:
                 self.set_jump_buffer_frames('instant', c.JUMP_BUFFER_FRAMES)
 
+    # -----------------------------------------------------------------
+    # COYOTE & JUMP BUFFER
+    # -----------------------------------------------------------------
     def coyote_ground_frames_for(self, which_type: str) -> int:
         if which_type == 'charged':
             return self.coyote_frames_charged
-        else:
-            return self.coyote_frames_instant
+        return self.coyote_frames_instant
 
     def set_coyote_ground_frames(self, which_type: str, value: int) -> None:
         if which_type == 'charged':
@@ -321,15 +344,13 @@ class Game:
     def jump_buffer_frames_for(self, which_type: str) -> int:
         if which_type == 'charged':
             return self.jump_buffer_frames_charged
-        else:
-            return self.jump_buffer_frames_instant
+        return self.jump_buffer_frames_instant
 
     def set_jump_buffer_frames(self, which_type: str, value: int) -> None:
         if which_type == 'charged':
             self.jump_buffer_frames_charged = value
         else:
             self.jump_buffer_frames_instant = value
-
 
 def main() -> None:
     while True:

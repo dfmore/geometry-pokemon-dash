@@ -41,7 +41,7 @@ def draw_hud_text(game, remaining_time):
     timer_text = game.font.render(f"Time: {int(remaining_time)}", True, c.BLACK)
     game.screen.blit(timer_text, (10, 10))
 
-    # Combine baseline + current level coins for display
+    # Combine baseline_coins + current_level_coins for display
     total_coins = game.baseline_coins + game.current_level_coins
 
     coin_text = game.font.render(f"Coins: {total_coins}", True, c.BLACK)

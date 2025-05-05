@@ -5,7 +5,8 @@ import sys
 
 import src.config as c
 import src.levels_config as lvl
-import src.scoreboard as sb
+import src.scoreboard as sb  # If you're using scoreboard saving
+# Otherwise remove references if you don't want a persistent scoreboard
 
 def show_completion_screen(game):
     over_text = game.font.render(
@@ -37,6 +38,9 @@ def show_completion_screen(game):
         show_final_message(game, "All levels completed! Thanks for playing.")
 
 def show_game_over_screen(game):
+    """
+    Called when the player dies but still has lives left => retry same level.
+    """
     over_text = game.font.render(
         f"Game Over! Press any key or Y to retry level {game.current_level_index + 1}",
         True, c.RED
@@ -61,18 +65,37 @@ def show_game_over_screen(game):
     main()
 
 def show_out_of_lives_screen(game):
-    initials = prompt_for_initials(game)
-    final_coins = game.baseline_coins
+    """
+    Called when the player has 0 lives left => prompt for initials,
+    store scoreboard with baseline_coins plus partial coins from final attempt,
+    then reset to level 1 with 10 lives.
+    """
+    # For scoreboard logic, we assume you have a scoreboard for storing top scores:
+    if hasattr(game, 'final_coins_for_scoreboard'):
+        final_coins = game.final_coins_for_scoreboard
+    else:
+        # fallback if you prefer only baseline_coins
+        final_coins = game.baseline_coins
 
+    initials = prompt_for_initials(game)
+
+    # If you're using scoreboard saving:
     entries = sb.add_score(initials, final_coins)
     show_scoreboard(game, entries)
 
+    # Reset to level 1
     lvl.CURRENT_LEVEL = 0
+
     from src.game_manager import Game, main
     Game.persistent_lives = 10
+    Game.persistent_baseline_coins = 0  # If you want to start from 0 coins next run
+
     main()
 
 def prompt_for_initials(game):
+    """
+    Wait for up to 3 letters (A-Z). Press Enter to confirm.
+    """
     entered = ""
     while True:
         game.screen.fill((0, 0, 0))
@@ -123,6 +146,9 @@ def finalize_initials(letters):
     return letters[:3]
 
 def show_scoreboard(game, entries):
+    """
+    Display the top scoreboard entries on screen.
+    """
     game.screen.fill((0, 0, 0))
     title_text = game.font.render("TOP SCORES", True, c.WHITE)
     title_rect = title_text.get_rect(center=(c.WIDTH // 2, 50))
@@ -137,6 +163,7 @@ def show_scoreboard(game, entries):
 
     pygame.display.update()
 
+    # Wait for user to press a key or button
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -147,6 +174,9 @@ def show_scoreboard(game, entries):
                 waiting = False
 
 def show_final_message(game, msg):
+    """
+    Called after all levels completed.
+    """
     over_text = game.font.render(msg, True, c.RED)
     over_rect = over_text.get_rect(center=(c.WIDTH // 2, c.HEIGHT // 2))
     game.screen.blit(over_text, over_rect)

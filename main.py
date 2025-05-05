@@ -6,6 +6,9 @@ pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
 pygame.mixer.init()
 
+pygame.mixer.music.load("assets/signal.mp3")
+pygame.mixer.music.play(-1)
+
 if c.FULLSCREEN:
     info = pygame.display.Info()
     screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)

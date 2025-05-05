@@ -4,7 +4,7 @@ import json
 import os
 
 SCOREBOARD_FILE = "scoreboard.json"
-MAX_ENTRIES = 5
+MAX_ENTRIES = 20
 
 def load_scoreboard():
     """
