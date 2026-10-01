@@ -54,6 +54,11 @@ MIN_JUMP_STRENGTH = 15
 MAX_JUMP_STRENGTH = 32
 MAX_FALL_SPEED = 30
 CHARGE_RATE = 1
+# Holding the jump key longer than this many frames (at FPS) turns a tap
+# (normal jump) into a power-jump charge.
+POWER_HOLD_FRAMES = 5
+POWER_BAR_SCALE = 3  # bar height multiplier; the width stays as it was
+NORMAL_JUMP_BAR_FRAC = 0.25  # bottom share of the bar that means a normal jump
 
 COYOTE_FRAMES = 3
 JUMP_BUFFER_FRAMES = 2

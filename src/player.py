@@ -18,6 +18,7 @@ class Player:
         self.on_ground = True
         self.charging = False
         self.jump_charge = 0
+        self.charge_frames = 0
         self.can_double_jump = True
 
     def move(self, platforms):

@@ -117,8 +117,6 @@ class Game:
                     sys.exit()
                 elif event.key == pygame.K_SPACE:
                     self.handle_charged_jump_press()
-                elif event.key == pygame.K_x:
-                    self.handle_instant_jump()
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
@@ -136,8 +134,6 @@ class Game:
             if event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 0:
                     self.handle_charged_jump_press()
-                elif event.button == 2:
-                    self.handle_instant_jump()
             if event.type == pygame.JOYBUTTONUP:
                 if event.button == 0:
                     self.handle_charged_jump_release()
@@ -165,9 +161,12 @@ class Game:
                 horizontal_input = 0
 
         if charge_held and can_charge:
-            self.player.jump_charge += c.CHARGE_RATE
-            if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
-                self.player.jump_charge = c.MAX_JUMP_STRENGTH
+            self.player.charge_frames += 1
+            # A quick tap stays a normal jump; only a longer hold charges.
+            if self.player.charge_frames > c.POWER_HOLD_FRAMES:
+                self.player.jump_charge += c.CHARGE_RATE
+                if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
+                    self.player.jump_charge = c.MAX_JUMP_STRENGTH
 
         # Joystick nudge
         if joystick is not None:
@@ -228,8 +227,6 @@ class Game:
             self.update_input()
 
             # Jump buffers expire
-            if self.jump_buffer_frames_charged > 0:
-                self.jump_buffer_frames_charged -= 1
             if self.jump_buffer_frames_instant > 0:
                 self.jump_buffer_frames_instant -= 1
 
@@ -241,16 +238,6 @@ class Game:
             # Coyote + Jump Buffer
             if self.player.on_ground:
                 self.set_coyote_ground_frames('charged', c.COYOTE_FRAMES)
-                if self.jump_buffer_frames_for('charged') > 0:
-                    self.set_jump_buffer_frames('charged', 0)
-                    if self.charge_button_held():
-                        self.handle_charged_jump_press()
-                    else:
-                        # Press and release both happened in the air: the
-                        # KEYUP is gone, so jump now at minimum strength
-                        # instead of starting a charge nothing will release.
-                        self.handle_instant_jump()
-
                 self.set_coyote_ground_frames('instant', c.COYOTE_FRAMES)
                 if self.jump_buffer_frames_for('instant') > 0:
                     self.handle_instant_jump()
@@ -345,24 +332,15 @@ class Game:
     # -----------------------------------------------------------------
     # CHARGED + INSTANT JUMP
     # -----------------------------------------------------------------
-    def charge_button_held(self) -> bool:
-        global joystick
-        if pygame.key.get_pressed()[pygame.K_SPACE]:
-            return True
-        if joystick is not None:
-            try:
-                return bool(joystick.get_button(0))
-            except pygame.error:
-                joystick = None
-        return False
-
     def handle_charged_jump_press(self) -> None:
-        if self.coyote_ground_frames_for('charged') > 0:
+        # One jump key: on the ground it starts a tap-or-hold, in the air it
+        # is the double jump (or a buffered normal jump if that is spent).
+        if self.player.on_ground:
             self.player.charging = True
             self.player.jump_charge = c.MIN_JUMP_STRENGTH
-            self.set_jump_buffer_frames('charged', 0)
+            self.player.charge_frames = 0
         else:
-            self.set_jump_buffer_frames('charged', c.JUMP_BUFFER_FRAMES)
+            self.handle_instant_jump()
 
     def handle_charged_jump_release(self) -> None:
         if self.player.charging:
@@ -373,6 +351,7 @@ class Game:
                 self.coyote_frames_charged = 0
             self.player.charging = False
             self.player.jump_charge = 0
+            self.player.charge_frames = 0
 
     def handle_instant_jump(self) -> None:
         if self.coyote_ground_frames_for('instant') > 0 and (

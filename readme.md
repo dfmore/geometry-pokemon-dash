@@ -29,11 +29,9 @@ The game runs fullscreen, scaled from a 1200x800 layout. To play in a window ins
 
 ## Controls
 
-- **Space** (hold, then release): charged jump.
-- **X**: jump / double jump.
+- **Space** (one key): tap for a normal jump (press again in the air for a double jump); hold, then release, for a power jump.
 - **ESC**: quit (works on every screen).
-- **Joystick button 0**: charged jump (hold and release).
-- **Joystick button 2**: jump / double jump.
+- **Joystick button 0**: same as Space (tap = normal / double jump, hold = power jump).
 - **Left stick**: nudge left/right.
 - **Any key or button**: continue on the end screens (level complete, game over, scoreboard).
 
