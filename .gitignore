@@ -1,1 +1,5 @@
 __pycache__/
+scoreboard.json
+.claude/reviews/
+.claude/worktrees/
+.claude/session-snapshot.json
