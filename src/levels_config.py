@@ -2,6 +2,9 @@
 
 CURRENT_LEVEL = 0
 
+# Platform y values are design pixels on an 800px-high screen;
+# level_manager clamps them to 150..680 and scales them to the real height.
+
 LEVELS = [
     {
         "name": "Level 1 (Easy)",
@@ -24,7 +27,7 @@ LEVELS = [
         "vertical_offset_min": -45,
         "vertical_offset_max": 45,
         "min_platform_y": 400,
-        "max_platform_y": 800,
+        "max_platform_y": 680,
         "obstacle_spawn_chance": 0.4,
         "obstacle_max_per_platform": 1,
         "coin_chance": 0.4,
@@ -37,7 +40,7 @@ LEVELS = [
         "vertical_offset_min": -75,
         "vertical_offset_max": 75,
         "min_platform_y": 450,
-        "max_platform_y": 800,
+        "max_platform_y": 680,
         "obstacle_spawn_chance": 0.4,
         "obstacle_max_per_platform": 2,
         "coin_chance": 0.4,
@@ -50,7 +53,7 @@ LEVELS = [
         "vertical_offset_min": -95,
         "vertical_offset_max": 95,
         "min_platform_y": 250,
-        "max_platform_y": 900,
+        "max_platform_y": 680,
         "obstacle_spawn_chance": 0.5,
         "obstacle_max_per_platform": 1,
         "coin_chance": 0.4,
@@ -63,7 +66,7 @@ LEVELS = [
         "vertical_offset_min": -135,
         "vertical_offset_max": 135,
         "min_platform_y": 200,
-        "max_platform_y": 1100,
+        "max_platform_y": 680,
         "obstacle_spawn_chance": 0.7,
         "obstacle_max_per_platform": 2,
         "coin_chance": 0.3,

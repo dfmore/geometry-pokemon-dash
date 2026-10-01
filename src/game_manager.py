@@ -24,12 +24,21 @@ from src.screens import (
     show_out_of_lives_screen
 )
 
-# Check for joystick
-if pygame.joystick.get_count() > 0:
-    joystick = pygame.joystick.Joystick(0)
-    joystick.init()
-else:
-    joystick = None
+# Joystick (hot-pluggable)
+joystick = None
+
+
+def _init_joystick() -> None:
+    global joystick
+    try:
+        if pygame.joystick.get_count() > 0:
+            joystick = pygame.joystick.Joystick(0)
+            joystick.init()
+    except pygame.error:
+        joystick = None
+
+
+_init_joystick()
 
 class Game:
     # -----------------------------------------------------------------
@@ -39,6 +48,7 @@ class Game:
     # your baseline_coins or lives each time you restart the game loop.
     persistent_baseline_coins = 0  # locked in from completed levels
     persistent_lives = 10         # total lives left
+    _font = None                  # shared font, created lazily
 
     def __init__(self) -> None:
         # Load assets
@@ -51,7 +61,9 @@ class Game:
         # Rendering
         self.screen = pygame.display.get_surface()
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font(None, 36)
+        if Game._font is None:
+            Game._font = pygame.font.Font(None, 36)
+        self.font = Game._font
         
         # Level manager
         self.level_manager = LevelManager(self.pokemon_images, self.coin_image)
@@ -60,6 +72,13 @@ class Game:
         # Player & spikes
         self.player = Player()
         self.spikes = Spikes()
+        # Spawn resting on the first platform so no level seed can put the
+        # player's feet below it (the swept landing test would then miss it).
+        if self.level_manager.platforms:
+            first = self.level_manager.platforms[0]
+            self.player.y = first.y - self.player.height
+            self.player.vel_y = 0
+            self.player.on_ground = True
 
         # Bubbles
         self.bubbles = []
@@ -79,13 +98,14 @@ class Game:
         self.final_coins_for_scoreboard = 0
 
         # Timers
-        self.start_ticks = pygame.time.get_ticks()
+        self.frame_count = 0
         self.level_complete = False
 
     # -----------------------------------------------------------------
     # EVENT PROCESSING
     # -----------------------------------------------------------------
     def process_events(self) -> None:
+        global joystick
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -105,6 +125,14 @@ class Game:
                     self.handle_charged_jump_release()
 
             # Joystick
+            if event.type == pygame.JOYDEVICEADDED:
+                try:
+                    joystick = pygame.joystick.Joystick(event.device_index)
+                    joystick.init()
+                except pygame.error:
+                    joystick = None
+            if event.type == pygame.JOYDEVICEREMOVED:
+                joystick = None
             if event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 0:
                     self.handle_charged_jump_press()
@@ -118,22 +146,31 @@ class Game:
     # UPDATING INPUT
     # -----------------------------------------------------------------
     def update_input(self) -> None:
+        global joystick
         keys = pygame.key.get_pressed()
+        can_charge = self.player.charging and (
+            self.player.on_ground or self.coyote_frames_charged > 0
+        )
 
         # Charged jump logic
-        if keys[pygame.K_SPACE] and self.player.charging and self.player.on_ground:
-            self.player.jump_charge += c.CHARGE_RATE
-            if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
-                self.player.jump_charge = c.MAX_JUMP_STRENGTH
+        charge_held = bool(keys[pygame.K_SPACE])
+        horizontal_input = 0
+        if joystick is not None:
+            try:
+                if joystick.get_button(0):
+                    charge_held = True
+                horizontal_input = joystick.get_axis(0)
+            except pygame.error:
+                joystick = None
+                horizontal_input = 0
 
-        if joystick is not None and joystick.get_button(0) and self.player.charging and self.player.on_ground:
+        if charge_held and can_charge:
             self.player.jump_charge += c.CHARGE_RATE
             if self.player.jump_charge > c.MAX_JUMP_STRENGTH:
                 self.player.jump_charge = c.MAX_JUMP_STRENGTH
 
         # Joystick nudge
         if joystick is not None:
-            horizontal_input = joystick.get_axis(0)
             if abs(horizontal_input) < c.JOYSTICK_NUDGE_DEADZONE:
                 horizontal_input = 0
             target_x = self.player.default_x + horizontal_input * c.JOYSTICK_NUDGE_RANGE
@@ -179,19 +216,23 @@ class Game:
         """A single "game run". If the player completes the level or dies, we end and call screens."""
         self.current_level_coins = 0
         self.level_complete = False
-        self.start_ticks = pygame.time.get_ticks()
+
+        self.frame_count = 0
 
         running = True
         while running:
-            self.screen.fill(c.LIGHT_BLUE)
-            self.update_bubbles()
-            self.draw_bubbles()
-
-            elapsed_time = (pygame.time.get_ticks() - self.start_ticks) / 1000.0
-            remaining_time = max(0, c.LEVEL_DURATION - elapsed_time)
+            self.frame_count += 1
+            remaining_time = max(0, c.LEVEL_DURATION - self.frame_count / c.FPS)
 
             self.process_events()
             self.update_input()
+
+            # Jump buffers expire
+            if self.jump_buffer_frames_charged > 0:
+                self.jump_buffer_frames_charged -= 1
+            if self.jump_buffer_frames_instant > 0:
+                self.jump_buffer_frames_instant -= 1
+
             self.update_objects()
 
             # Move the player
@@ -201,8 +242,14 @@ class Game:
             if self.player.on_ground:
                 self.set_coyote_ground_frames('charged', c.COYOTE_FRAMES)
                 if self.jump_buffer_frames_for('charged') > 0:
-                    self.handle_charged_jump_press()
                     self.set_jump_buffer_frames('charged', 0)
+                    if self.charge_button_held():
+                        self.handle_charged_jump_press()
+                    else:
+                        # Press and release both happened in the air: the
+                        # KEYUP is gone, so jump now at minimum strength
+                        # instead of starting a charge nothing will release.
+                        self.handle_instant_jump()
 
                 self.set_coyote_ground_frames('instant', c.COYOTE_FRAMES)
                 if self.jump_buffer_frames_for('instant') > 0:
@@ -211,6 +258,11 @@ class Game:
             else:
                 self.dec_coyote_ground_frames('charged')
                 self.dec_coyote_ground_frames('instant')
+
+            # Walked off an edge while charging: jump instead of dropping the charge
+            if (self.player.charging and not self.player.on_ground
+                    and self.coyote_frames_charged <= 1):
+                self.handle_charged_jump_release()
 
             # Coin collection
             player_rect = pygame.Rect(
@@ -222,9 +274,6 @@ class Game:
                     self.level_manager.star_coins.remove(coin)
                     self.current_level_coins += 1
                     self.coin_sound.play()
-
-            # Draw everything
-            self.draw_game(remaining_time)
 
             # Collisions => death
             if self.level_manager.check_obstacle_collisions(player_rect):
@@ -242,8 +291,14 @@ class Game:
                 running = False
                 self.level_complete = True
 
+            # Draw everything
+            self.screen.fill(c.LIGHT_BLUE)
+            self.update_bubbles()
+            self.draw_bubbles()
+            self.draw_game(remaining_time)
+
             pygame.display.update()
-            self.clock.tick(30)
+            self.clock.tick(c.FPS)
 
         # End of main loop => either we died or completed
         if self.level_complete:
@@ -290,6 +345,17 @@ class Game:
     # -----------------------------------------------------------------
     # CHARGED + INSTANT JUMP
     # -----------------------------------------------------------------
+    def charge_button_held(self) -> bool:
+        global joystick
+        if pygame.key.get_pressed()[pygame.K_SPACE]:
+            return True
+        if joystick is not None:
+            try:
+                return bool(joystick.get_button(0))
+            except pygame.error:
+                joystick = None
+        return False
+
     def handle_charged_jump_press(self) -> None:
         if self.coyote_ground_frames_for('charged') > 0:
             self.player.charging = True
@@ -300,22 +366,30 @@ class Game:
 
     def handle_charged_jump_release(self) -> None:
         if self.player.charging:
-            if self.player.on_ground:
-                self.player.vel_y = -self.player.jump_charge
+            if self.player.on_ground or self.coyote_frames_charged > 0:
+                self.player.vel_y = -min(self.player.jump_charge, c.MAX_JUMP_STRENGTH)
                 self.boing_sound.play()
+                self.coyote_frames_instant = 0
+                self.coyote_frames_charged = 0
             self.player.charging = False
             self.player.jump_charge = 0
 
     def handle_instant_jump(self) -> None:
-        if self.coyote_ground_frames_for('instant') > 0:
+        if self.coyote_ground_frames_for('instant') > 0 and (
+            self.player.on_ground or self.player.vel_y >= 0
+        ):
             self.player.vel_y = -c.MIN_JUMP_STRENGTH
             self.boing_sound.play()
             self.set_jump_buffer_frames('instant', 0)
+            self.coyote_frames_instant = 0
+            self.coyote_frames_charged = 0
         else:
             if not self.player.on_ground and self.player.can_double_jump:
                 self.player.vel_y = -c.MIN_JUMP_STRENGTH
                 self.player.can_double_jump = False
                 self.boing_sound.play()
+                self.coyote_frames_instant = 0
+                self.coyote_frames_charged = 0
             else:
                 self.set_jump_buffer_frames('instant', c.JUMP_BUFFER_FRAMES)
 

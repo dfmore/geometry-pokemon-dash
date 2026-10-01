@@ -21,25 +21,33 @@ class Player:
         self.can_double_jump = True
 
     def move(self, platforms):
+        prev_bottom = self.y + self.height
         self.vel_y += c.GRAVITY
+        self.vel_y = min(self.vel_y, c.MAX_FALL_SPEED)
         self.y += self.vel_y
+        new_bottom = self.y + self.height
         self.on_ground = False
 
-        player_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        if self.vel_y <= 0:
+            return
 
+        # Swept landing test: the bottom edge must cross the platform top
+        # this frame, so fast falls never tunnel and side contact is ignored.
+        landing = None
         for platform in platforms:
-            platform_rect = pygame.Rect(platform.x, platform.y,
-                                        platform.width, platform.height)
-            # Slight horizontal tolerance
-            platform_rect.x -= c.PLATFORM_EDGE_TOLERANCE
-            platform_rect.width += 2 * c.PLATFORM_EDGE_TOLERANCE
+            tol = c.PLATFORM_EDGE_TOLERANCE
+            if (self.x + self.width > platform.x - tol
+                    and self.x < platform.x + platform.width + tol
+                    and prev_bottom <= platform.y + 1
+                    and new_bottom >= platform.y):
+                if landing is None or platform.y < landing.y:
+                    landing = platform
 
-            if self.vel_y > 0 and player_rect.colliderect(platform_rect):
-                self.y = platform.y - self.height
-                self.vel_y = 0
-                self.on_ground = True
-                self.can_double_jump = True
-                player_rect.y = self.y
+        if landing is not None:
+            self.y = landing.y - self.height
+            self.vel_y = 0
+            self.on_ground = True
+            self.can_double_jump = True
 
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 0, 255),

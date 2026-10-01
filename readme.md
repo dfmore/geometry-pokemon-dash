@@ -1,53 +1,44 @@
 # Geometry Pokemon Dash
 
-Geometry Pokemon Dash is a 2D game built with Python and Pygame.
+Geometry Pokemon Dash is a 2D runner game built with Python and Pygame. Play through 5 levels with 10 lives, 40 seconds per level, dodging obstacles and collecting coins.
 
 ## Prerequisites
 
-Before running the game, ensure you have the following installed:
-
 - Python 3.8 or higher
-- Pygame library
+- Pygame (installed from `requirements.txt`)
 
 ## Installation
 
-1. Clone the repository to your local machine:
-
-   ```bash
-   git clone https://github.com/your-username/geometry-pokemon-dash.git
-   cd geometry-pokemon-dash
-   ```
+1. Clone this repository to your local machine and change into its folder.
 
 2. Install the required dependencies:
 
    ```bash
-   pip install pygame
+   pip install -r requirements.txt
    ```
 
 ## Running the Game
 
-1. Navigate to the project directory:
+From the project directory, run:
 
-   ```bash
-   cd geometry-pokemon-dash
-   ```
+```bash
+python main.py
+```
 
-2. Run the game using the following command:
+The game runs fullscreen, scaled from a 1200x800 layout. To play in a window instead, set `FULLSCREEN = False` in `src/config.py`.
 
-   ```bash
-   python main.py
-   ```
+## Controls
 
-3. The game window will open, and you can start playing!
+- **Space** (hold, then release): charged jump.
+- **X**: jump / double jump.
+- **ESC**: quit (works on every screen).
+- **Joystick button 0**: charged jump (hold and release).
+- **Joystick button 2**: jump / double jump.
+- **Left stick**: nudge left/right.
+- **Any key or button**: continue on the end screens (level complete, game over, scoreboard).
 
-## Game Functionality and Controls
+## Scores
 
-- **Spacebar**: Press to charge and release to jump.
-- **X Key**: Press to perform a jump (single or double jump).
-- **Joystick Button 0**: Press to charge and release to jump.
-- **Joystick Button 2**: Press to perform a jump (single or double jump).
-- **Joystick Button 3**: Press to restart the game after a game over.
-
-The objective of the game is to navigate through the levels, avoid obstacles, and collect coins. The game features various platforms, spikes, and other challenges that you need to overcome to progress.
+When the game ends, enter your initials to save your coin total. High scores are saved to `scoreboard.json` in the project folder.
 
 Enjoy playing Geometry Pokemon Dash!

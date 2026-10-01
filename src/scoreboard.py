@@ -3,32 +3,49 @@
 import json
 import os
 
-SCOREBOARD_FILE = "scoreboard.json"
+# Project root (parent of src/), independent of the working directory.
+SCOREBOARD_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scoreboard.json"
+)
 MAX_ENTRIES = 20
+
+def _valid_entry(e):
+    return (
+        isinstance(e, dict)
+        and isinstance(e.get("name"), str)
+        and isinstance(e.get("score"), (int, float))
+        and not isinstance(e.get("score"), bool)
+    )
 
 def load_scoreboard():
     """
     Reads scoreboard from scoreboard.json.
     Returns a list of dicts: [{ "name": "ABC", "score": 99 }, ...]
+    Missing, unreadable or malformed data yields [] / only the valid entries.
     """
-    if not os.path.exists(SCOREBOARD_FILE):
-        return []
-    with open(SCOREBOARD_FILE, "r") as f:
-        try:
+    try:
+        with open(SCOREBOARD_FILE, "r") as f:
             data = json.load(f)
-            if isinstance(data, list):
-                return data
-            return []
-        except json.JSONDecodeError:
-            return []
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [e for e in data if _valid_entry(e)]
 
 def save_scoreboard(entries):
     """
-    Writes the scoreboard list to scoreboard.json.
-    Each entry is a dict with {"name": str, "score": int}
+    Writes the scoreboard list to scoreboard.json (atomically via a temp file).
+    Each entry is a dict with {"name": str, "score": int}.
+    Returns True on success, False if the file could not be written.
     """
-    with open(SCOREBOARD_FILE, "w") as f:
-        json.dump(entries, f)
+    tmp = SCOREBOARD_FILE + ".tmp"
+    try:
+        with open(tmp, "w") as f:
+            json.dump(entries, f)
+        os.replace(tmp, SCOREBOARD_FILE)
+        return True
+    except OSError:
+        return False
 
 def add_score(name, score):
     """
@@ -40,7 +57,7 @@ def add_score(name, score):
 
     # Sort descending by score
     entries.sort(key=lambda x: x["score"], reverse=True)
-    # Keep top 5
+    # Keep top MAX_ENTRIES
     entries = entries[:MAX_ENTRIES]
 
     save_scoreboard(entries)

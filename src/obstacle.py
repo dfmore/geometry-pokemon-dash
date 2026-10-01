@@ -4,8 +4,8 @@ import random
 import src.config as c
 
 class Obstacle:
-    def __init__(self, x, y, pokemon_images):
-        self.image = random.choice(pokemon_images)
+    def __init__(self, x, y, pokemon_images, rng=None):
+        self.image = (rng if rng is not None else random).choice(pokemon_images)
         self.width, self.height = self.image.get_size()
         self.x = x
         self.y = y
